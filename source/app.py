@@ -1,8 +1,7 @@
 import gradio as gr #bibliotheque pour interface web en python
-from source.latent_space import *
+from latent_space import *
 
-#Creation interface Gradio : 
-
+#Creation interface Gradio :
 with gr.Blocks() as demo: #pour organiser l'interface en Blocks
 
     gr.Markdown("# Portrait Robot Generator") #titre en markdown
