@@ -1,10 +1,20 @@
 import numpy as np #bibliotheque pour manipuler tableaux numeriques
 from PIL import Image #bibliotheque pour manipulation d'images
-import numpy as np #bibliotheque pour manipuler tableaux numeriques
 
 #-----------------------------------------------------------------------------
 # Reconstruction d'images  
 #-----------------------------------------------------------------------------
+def encode(image):
+    """Placeholder encodeur (image -> vecteur latent)"""
+    img = np.array(image)
+    return img.flatten() / 255.0  # simulation
+
+def decode(latent, shape):
+    """Placeholder decodeur (vecteur latent -> image)"""
+    img = (latent * 255.0).reshape(shape).astype(np.uint8)
+    return Image.fromarray(img)
+ 
+
 def reconstruct_image(image):
     """
     Cette fonction prend une image en entrée
@@ -15,64 +25,65 @@ def reconstruct_image(image):
 
     img = np.array(image) #conversion image en tableau numpy
 
-    # simulation reconstruction (placeholder)
-    reconstructed = img
+    latent = encode(image)
+    reconstructed = decode(latent, img_array.shape)
 
-    return Image.fromarray(reconstructed)
+    return reconstructed
 
 #-----------------------------------------------------------------------------
 # Interpolation d'images
 #-----------------------------------------------------------------------------
-def interpolate_images(img1, img2):
+def interpolate_images(img1, img2, t=0.5):
     """
-    Placeholder interpolation espace latent
+    Interpolation dans l'espace latent entre deux images
+    t=0.5 correspond à une interpolation à mi-chemin
+
     """
     if img1 is None or img2 is None:
         return None
 
-    img1 = np.array(img1)
-    img2 = np.array(img2)
+    z1 = encode(img1)
+    z2 = encode(img2)
 
-    blend = (0.5 * img1 + 0.5 * img2).astype(np.uint8)
+    z_interp = (1 - t) * z1 + t * z2
 
-    return Image.fromarray(blend)
-
-#-----------------------------------------------------------------------------
-# Mélange d'images 
-#-----------------------------------------------------------------------------
+    shape = np.array(img1).shape
+    return decode(z_interp, shape)
 
 
-
-#-----------------------------------------------------------------------------
-# Ajoute ou suppression d'une caractéristique 
-#-----------------------------------------------------------------------------
-features = ['5_o_Clock_Shadow', 'Arched_Eyebrows', 'Attractive', 'Bags_Under_Eyes', 'Bald', 'Bangs', 'Big_Lips', 'Big_Nose', 'Black_Hair', 'Blond_Hair',
-             'Blurry', 'Brown_Hair', 'Bushy_Eyebrows', 'Chubby', 'Double_Chin', 'Eyeglasses', 'Goatee', 'Gray_Hair', 'Heavy_Makeup', 'High_Cheekbones',
-            'Male','Mouth_Slightly_Open','Mustache', 'Narrow_Eyes', 'No_Beard', 'Oval_Face', 'Pale_Skin', 'Pointy_Nose', 'Receding_Hairline',
-            'Rosy_Cheeks','Sideburns','Smiling', 'Straight_Hair', 'Wavy_Hair', 'Wearing_Earrings', 'Wearing_Hat', 'Wearing_Lipstick', 'Wearing_Necklace', 'Wearing_Necktie','Young' ]
-
-def load_attributs(txt_file = 'list_attr_celeba.txt'): #ajouter le dataset et ce fichier
+# -----------------------------------------------------------------------------
+# Chargement des attributs (CelebA)
+# -----------------------------------------------------------------------------
+def load_attributs(txt_file='list_attr_celeba.txt'):
     '''    
     Charge les attributs en binaire (-1 ou 1) pour chaque image
     Retour:
-        Dict {image_id: [features]}
+        images_id : liste des ids
+        dico_attributs : dict {image_id: [features]}
     '''    
     dico_attributs = {}
     images_id = []
-    with open (txt_file, 'r') as file : 
-        for line in file : 
+
+    with open(txt_file, 'r') as file:
+        lines = file.readlines()
+
+        # ignorer les deux premières lignes (header CelebA)
+        lines = lines[2:]
+
+        for line in lines:
             parties = line.strip().split()
-            image_id = parties[0] #id de l'image 
+            image_id = parties[0]
             images_id.append(image_id)
-            
-            features = []
-            for x in parties[1:]:
-                features.append(x) #creation des listes des attributs binaires pour l'image
-            dico_attributs[image_id] = features #ajout dans le dico de l'image et de ses features
+
+            features = [int(x) for x in parties[1:]]
+            dico_attributs[image_id] = features
+
     return images_id, dico_attributs
 
 
-
+# -----------------------------------------------------------------------------
+# Calcul des directions latentes
+# -----------------------------------------------------------------------------
 def compute_directions(features, images_id, dico_attributs, vecteurs_latents): 
     '''
     Calcule les directions pour chaque caractéristique (chaque feature)
@@ -99,6 +110,10 @@ def compute_directions(features, images_id, dico_attributs, vecteurs_latents):
             elif dico_attributs['id'][i] == -1 : #l'attribut n'est pas présent dans l'image 
                 without_feature.append(vecteurs_latents[j]) #on ajoute le vecteur latent correspondant à cette image dans la liste des 'without_features'
         
+        # éviter erreurs si listes vides
+        if len(with_feature) == 0 or len(without_feature) == 0:
+            continue
+
         # Moyennes des vecteurs latents dans with_feature et without_features 
         moy_with = np.mean(with_feature, axis = 0)
         moy_without = np.mean(without_feature, axis = 0)
@@ -110,8 +125,87 @@ def compute_directions(features, images_id, dico_attributs, vecteurs_latents):
     return dico_direction
 
 
+# -----------------------------------------------------------------------------
+# Modification d’un attribut dans l’espace latent
+# -----------------------------------------------------------------------------
+def modif_attribut(latent_original, dico_direction, attribut, modification, alpha=1.0): 
+    '''
+    Ajoute ou supprime un attribut dans le vecteur latent
+    '''
+    if attribut not in dico_direction:
+        raise ValueError(f"Attribut {attribut} non trouvé")
 
-def modif_attribut(latent_original , dico_direction, attribut, modification, alpha = 1.0): 
+    direction = dico_direction[attribut]
+
+    if modification == 'ajout':
+        nouv_latent = latent_original + alpha * direction
+    elif modification == 'suppression':
+        nouv_latent = latent_original - alpha * direction
+    else:
+        raise ValueError("modification doit être 'ajout' ou 'suppression'")
+
+    return nouv_latent
+
+
+
+
+
+
+
+
+
+
+## CODE Salomé
+
+
+
+#-----------------------------------------------------------------------------
+# Mélange d'images 
+#-----------------------------------------------------------------------------
+
+#additioner vect latents, en faisant moyennes des vecteurs latents de plusieurs images, etc.
+
+#-----------------------------------------------------------------------------
+# Ajoute ou suppression d'une caractéristique 
+#-----------------------------------------------------------------------------
+#features = ['5_o_Clock_Shadow', 'Arched_Eyebrows', 'Attractive', 'Bags_Under_Eyes', 'Bald', 'Bangs', 'Big_Lips', 'Big_Nose', 'Black_Hair', 'Blond_Hair',
+#             'Blurry', 'Brown_Hair', 'Bushy_Eyebrows', 'Chubby', 'Double_Chin', 'Eyeglasses', 'Goatee', 'Gray_Hair', 'Heavy_Makeup', 'High_Cheekbones',
+ #            'Male','Mouth_Slightly_Open','Mustache', 'Narrow_Eyes', 'No_Beard', 'Oval_Face', 'Pale_Skin', 'Pointy_Nose', 'Receding_Hairline',
+   #          'Rosy_Cheeks','Sideburns','Smiling', 'Straight_Hair', 'Wavy_Hair', 'Wearing_Earrings', 'Wearing_Hat', 'Wearing_Lipstick', 'Wearing_Necklace', 'Wearing_Necktie','Young' ]
+
+
+
+# à retester et comparer avec la mienne une fois quìon a le fichier txt
+
+#def load_attributs(txt_file = 'list_attr_celeba.txt'): #ajouter le dataset et ce fichier
+    '''    
+    Charge les attributs en binaire (-1 ou 1) pour chaque image
+    Retour:
+        Dict {image_id: [features]}
+    '''    
+    dico_attributs = {}
+    images_id = []
+    with open (txt_file, 'r') as file : 
+        for line in file : 
+            parties = line.strip().split()
+            image_id = parties[0] #id de l'image 
+            images_id.append(image_id)
+            
+            features = []
+            for x in parties[1:]:
+                features.append(x) #creation des listes des attributs binaires pour l'image
+            dico_attributs[image_id] = features #ajout dans le dico de l'image et de ses features
+    return images_id, dico_attributs
+
+
+
+ 
+
+
+
+
+
+#def modif_attribut(latent_original , dico_direction, attribut, modification, alpha = 1.0): 
     '''
     Fonction qui modifie une image en ajoutant ou en supprimant un attribut donné 
     modification : ajout ou suppression (de l'attribut)
