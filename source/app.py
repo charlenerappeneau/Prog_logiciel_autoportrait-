@@ -30,9 +30,9 @@ with gr.Blocks() as demo:
     gr.Markdown("# Portrait Robot Generator")
     gr.Markdown("Projet VAE basé sur CelebA")
 
-    #--------------------------------
-    # Questionnaire
-    #-------------------------------- 
+    #------------------------------------------------------------------------------------------------------------
+    # Questionnaire : seules les caractéristiques principales sont mises en avant (pas les 40 attributs)
+    #------------------------------------------------------------------------------------------------------------ 
 
     with gr.Column(visible=True) as questionnaire:
         gr.Markdown("## Portrait robot")
@@ -44,24 +44,25 @@ with gr.Blocks() as demo:
 
         # Cheveux
         gr.Markdown("### Cheveux")
-        couleur_chev = gr.Dropdown(['Blond','Brun','Noir','Roux','Gris','Chauve'], label="Couleur des cheveux")
-        type_chev = gr.Dropdown(['Raides','Ondulés','Bouclés','Frisés'], label="Type de cheveux")
+        couleur_chev = gr.Dropdown(['Blond','Brun','Noir','Gris','Chauve'], label="Couleur des cheveux")
+        type_chev = gr.Dropdown(['Raides','Ondulés'], label="Type de cheveux")
 
         # Pilosité
         gr.Markdown("### Pilosité")
-        pilosite = gr.CheckboxGroup(["Barbe", "Moustache", "Bouc", "Frange", "Calvitie frontale"], label="Choix multiples")
-
-        # Accessoires
-        gr.Markdown("### Accessoires")
-        accessoires = gr.CheckboxGroup(["Lunettes","Maquillage prononcé","Boucles d’oreilles","Chapeau","Rouge à lèvres","Collier","Cravate"], label="Choix multiples")
+        pilosite = gr.CheckboxGroup(["Barbe", "Moustache", "Bouc", "Frange", "Sideburns", "Calvitie frontale"], label="Choix multiples")
 
         # Visage
-        gr.Markdown("### Forme du visage et traits")
-        visage = gr.CheckboxGroup(["Joues rosées","Nez pointu","Peau pâle","Visage ovale","Yeux étroits","Pommettes hautes","Bouche entrouverte","Double menton","Joues rondes","Sourcils épais","Gros nez","Lèvres pulpeuses","Cernes","Souriant","Attirant"], label="Choix multiples")
+        gr.Markdown("### Forme et traits du visage")
+        visage = gr.CheckboxGroup(["Joues rosées","Nez pointu","Peau pâle","Visage ovale","Yeux étroits","Pommettes hautes","Bouche entrouverte","Double menton","Sourcils épais","Gros nez","Lèvres pulpeuses","Cernes","Souriant","Attirant"], label="Choix multiples")
+        
+        # Accessoires
+        gr.Markdown("### Accessoires")
+        accessoires = gr.CheckboxGroup(["Lunettes","Maquillage prononcé","Boucles d'oreilles","Chapeau","Rouge à lèvres","Collier","Cravate"], label="Choix multiples")
         
         button1 = gr.Button('Voir les propositions')
 
-    
+
+
     #--------------------------------
     # Images 
     #-------------------------------- 
@@ -94,7 +95,8 @@ with gr.Blocks() as demo:
     #--------------------------------
     # Boutons 
     #-------------------------------- 
-    button1.click(selection_images, inputs=[sexe, couleur_chev, type_chev, pilosite, accessoires, visage], outputs=[gallery, questionnaire, images_select])
+    button1.click(selection_images, inputs=[sexe, couleur_chev, type_chev, pilosite, accessoires, visage], outputs=[gallery, questionnaire, images_select]) #gradio appelle la fonction selection_images qui aura en entrée l'input
     button2.click(images_to_actions, inputs=[], outputs=[images_select, actions])
 
 demo.launch()
+

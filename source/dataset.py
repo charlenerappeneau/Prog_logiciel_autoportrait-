@@ -103,13 +103,29 @@ def merge_attributes_id(df_attributes, df_identities):
 
 
 
+def mapping_features(): 
+    '''
+    Cette fonction crée une correspondance entre ce que l'utilisateur choisit lors du questionnaire et ce que comprend le dataset de CelebA (les attributs)
+    
+    '''
+    sexe_map = {"Homme" : {"Male" : 1}, "Femme" :  {'Male' : -1} } #si l'utilisateur choisit 'Homme' cela correspond à la colonne 'Male' qui a pour valeur 1
+    hair_color_map = { "Noir" : {"Black_Hair" : 1}, "Blond" : {"Blond_Hair" : 1}, "Brun" : {"Brown_Hair" : 1}, "Chauve" : {"Bald" : 1}} #si l'utilisateur choisit 'Blond' cela correspond à la colonne 'Blond_Hair' qui a pour valeur 1
+    pilosity_map = {"Barbe" : { "5_o_Clock_Shadow" : 1}, "Moustache" : {"Mustache" : 1}, "Bouc" : {"Goatee": 1} , "Frange" : {"Bangs" : 1}, "Sideburns" : {"Sideburns" : 1}, "Calvitie frontale" : {"Receding_Hairline" : 1}}
+    facial_features_map = {"Joues rosées" : {"Rosy_Cheeks" : 1}, "Nez pointu" : {"Pointy_Nose" : 1},"Peau pâle" : { "Pale_Skin" : 1}, "Visage ovale" : {"Oval_Face0 : 1"}, "Yeux étroits" : {"Narrow_Eyes" : 1}, "Pommettes hautes" : {"High_Cheekbones" : 1}, "Bouche entrouverte" : {"Mouth_Slightly_Open" : 1}, "Double menton" : {"Double_Chin" : 1}, "Sourcils épais" : {"Bushy_Eyebrows" : 1}, 
+                           "Gros nez" : {"Big_Nose" : 1 },"Lèvres pulpeuses" : {"Big_Lips" : 1},"Cernes" : {"Bags_Under_Eyes" : 1}}
+    accessories_map = {"Lunettes" : {"Eyeglasses" : 1},"Maquillage prononcé" : {"Heavy_Makeup" : 1},"Boucles d'oreilles" : {"Wearing_Earrings" : 1},"Chapeau" : {"Wearing_Hat" : 1},"Rouge à lèvres" : {"Wearing_Lipstick" : 1},"Collier" : {"Wearing_Necklace" : 1},"Cravate" : {"Wearing_Necktie" : 1}}
+
+    return sexe_map, hair_color_map, pilosity_map, facial_features_map, accessories_map
+
+
+
+
+
 
 def selection_images(sexe, couleur_chev, type_chev, yeux, lunettes, barbe):
     images = [] #images qui vont être sélectionnaires
     #code (voir cmt on va organiser les imgaes, dico ? ect...)
     return (images,gr.update(visible=False),gr.update(visible=True))
-
-
 
 
 #-----------------------------------------------
