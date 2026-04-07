@@ -1,102 +1,147 @@
 import gradio as gr
 from PIL import Image
-from latent_space import *
-from dataset import selection_images
+from source.prepa_dataset import *
+import os
 
-#======================================================================
-# FONCTIONS
-#======================================================================
+max_images = 6 
 
-def selection_images(sexe, couleur_chev, type_chev, pilosite, accessoires, visage):
+# -----------------------------
+# Chargement des données
+# -----------------------------
+df_attr = load_attributes("dataset/list_attr_celeba.txt")
+df_id = load_identities("dataset/identity_CelebA.txt")
+df_merged = merge_attributes_id(df_attr, df_id)
+
+
+# ---------------------------------------------------------------------------------------
+# Etape 1 : affichage d'images en fonction des réponses au questionnaire
+# ---------------------------------------------------------------------------------------
+def selection_images(sexe, couleur_chev, type_chev) : 
+    '''
+    Filtre le dataset selon les réponsdes de l'utilisateur au questionnaire puis affiche jusqu'à 6 images correspondantes
+    '''
+    print("Réponses utilisateur :", sexe, couleur_chev, type_chev)
     
-    # CODE QUI CORRESPOND A LA SELECTION D IMAGES A PROPOSER 
+    requirem = build_requirements(sexe, couleur_chev, type_chev)
+    print("Requirements :", requirem)
 
-    images = [Image.new("RGB", (128, 128), color="gray") for _ in range(3)]
-    return images, gr.update(visible=False), gr.update(visible=True)
+    filtered_df = filtrage_dataset(df_merged, requirem)
+    print("Taille filtered_df :", len(filtered_df))
+    
 
-def images_to_actions():
-    '''
-    Fonction qui masque le questionnaire et qui affiche les différentes actions proposées     
-    '''
-    return gr.update(visible=False), gr.update(visible=True)
+    #nombre images : 
+    nombre = min(max_images, len(filtered_df)) #on ne peut pas afficher plus que le 6 images et le nb d'images disponibles qui correspondent aux caractéritiques choisies par l'utilisateur
+    
+    if nombre == 0 : 
+        print("Aucune image trouvée")
+    
+    #Tirage aléatoire des images : 
+    selected_images = filtered_df.sample(n=nombre)['image_id']
+    liste_images = list(selected_images)
+    
+    
+    images = []
+    chemins = []
 
-
-#======================================================================
-# INTERFACE
-#======================================================================
-
-with gr.Blocks() as demo:
-
-    gr.Markdown("# Portrait Robot Generator")
-    gr.Markdown("Projet VAE basé sur CelebA")
-
-    #------------------------------------------------------------------------------------------------------------
-    # Questionnaire : seules les caractéristiques principales sont mises en avant (pas les 40 attributs)
-    #------------------------------------------------------------------------------------------------------------ 
-
-    with gr.Column(visible=True) as questionnaire:
-        gr.Markdown("## Portrait robot")
-        gr.Markdown("Décrivez les caractéristiques du visage")
-
-        # Sexe
-        gr.Markdown("### Sexe")
-        sexe = gr.Dropdown(['Homme','Femme'], label="Sexe")
-
-        # Cheveux
-        gr.Markdown("### Cheveux")
-        couleur_chev = gr.Dropdown(['Blond','Brun','Noir','Gris','Chauve'], label="Couleur des cheveux")
-        type_chev = gr.Dropdown(['Raides','Ondulés'], label="Type de cheveux")
-
-        # Pilosité
-        gr.Markdown("### Pilosité")
-        pilosite = gr.CheckboxGroup(["Barbe", "Moustache", "Bouc", "Frange", "Sideburns", "Calvitie frontale"], label="Choix multiples")
-
-        # Visage
-        gr.Markdown("### Forme et traits du visage")
-        visage = gr.CheckboxGroup(["Joues rosées","Nez pointu","Peau pâle","Visage ovale","Yeux étroits","Pommettes hautes","Bouche entrouverte","Double menton","Sourcils épais","Gros nez","Lèvres pulpeuses","Cernes","Souriant","Attirant"], label="Choix multiples")
+    for img in liste_images : 
+        chemin = f'dataset/img_align_celeba/{img}'
+        print("Chemin généré :", chemin)    
         
-        # Accessoires
-        gr.Markdown("### Accessoires")
-        accessoires = gr.CheckboxGroup(["Lunettes","Maquillage prononcé","Boucles d'oreilles","Chapeau","Rouge à lèvres","Collier","Cravate"], label="Choix multiples")
+        image = Image.open(chemin).copy()
+        images.append(image)
+        chemins.append(chemin)
+    
+    
+    #on complète pour que les 8 blocs alloués aux images dans l'interface soient remplis
+    while len(images) < max_images : 
+        images.append(None)
+        chemins.append(None)
+    
+    blocs = []
+    for i in range(max_images):
+        if i < nombre : 
+            blocs.append(gr.update(visible=True))
+        else : 
+            blocs.append(gr.update(visible = False))        
+    
+    return (*images, *chemins, *blocs, gr.update(visible=False), gr.update(visible=True), f"{nombre} image proposées" ) #cache le questionnaire (2e output) et affiche les images selectionnées (3e output)
+
+
+
+# ---------------------------------------------------------------------------------------
+# Etape 2 : Récupérer les images choisies par utilisateurs
+# ---------------------------------------------------------------------------------------
+
+def recuperer_selection(path1, path2, path3, path4, path5, path6, check1, check2, check3, check4, check5, check6):
+    '''
+    Cette fonction est appelée lorsque l'utilisateur clique sur 'Continuer vers les actions'
+    Elle lit les 6 chemins potentiels des images et les 6 checkboxes, elle récupère ensuite uniquement les chemins des images cochées. 
         
-        button1 = gr.Button('Voir les propositions')
+    '''
+    selection = []
+    if check1 and path1 is not None :
+        selection.append(path1)
+    if check2 and path2 is not None :
+        selection.append(path2)
+    if check3 and path3 is not None :
+        selection.append(path3)
+    if check4 and path4 is not None :
+        selection.append(path4)
+    if check5 and path5 is not None :
+        selection.append(path5)
+    if check6 and path6 is not None :
+        selection.append(path6) 
+    
+    return selection
 
 
 
-    #--------------------------------
-    # Images 
-    #-------------------------------- 
+# ---------------------------------------------------------------------------------------
+# Etape 3 : Verification en parallèle que le nombre d'images choisies correspond bien à 
+# l'action que veut réaliser l'utilisateur
+# ---------------------------------------------------------------------------------------
 
-    with gr.Column(visible=False) as images_select:
-        gr.Markdown("## Sélectionnez une ou plusieurs images")
-        gallery = gr.Gallery(label="Selection d'images", show_label=True, elem_id="gallery", interactive=True)
-        selectionnes = gr.Image(type='pil', label='Images sélectionnées')
-        button2 = gr.Button("Continuer vers les actions")
+def verif_selection(selection, action):
+    '''
+    Vérifie que le nombre d'images sélectionnées correspond à l'action
+    '''
+    n = len(selection)
 
-    #--------------------------------
-    # Actions
-    #-------------------------------- 
-    with gr.Column(visible=False) as actions:
-        gr.Markdown("## Choisissez une action")
+    if action == 'interpolation':
+        if n != 1 : 
+            return False, 'Pour la reconstruction, sélectionnez exactement 2 images'
+    elif action == 'fusion':
+        if n<2 and n > 3:
+            return False, 'Pour la fusion, sélectionniez 2 à 3 images'
+    elif action == 'mutation':
+            return False, 'Pour la mutation, sélectionnez exactement 1 image'
 
-        with gr.Tab("Reconstruction"):
-            input_img = gr.Image(type="pil", label="Image entrée")
-            output_img = gr.Image(label="Image reconstruite")
-            reconstruct_btn = gr.Button("Reconstruire")
-            reconstruct_btn.click(reconstruct_image, inputs=input_img, outputs=output_img)
+    return True
 
-        with gr.Tab("Interpolation"):
-            imgA = gr.Image(type="pil", label="Image A")
-            imgB = gr.Image(type="pil", label="Image B")
-            interp_img = gr.Image(label="Interpolation")
-            interp_btn = gr.Button("Interpoler")
-            interp_btn.click(interpolate_images, inputs=[imgA, imgB], outputs=interp_img)
+# ---------------------------------------------------------------------------------------
+# Etape 4 : Actions
+# ---------------------------------------------------------------------------------------
 
-    #--------------------------------
-    # Boutons 
-    #-------------------------------- 
-    button1.click(selection_images, inputs=[sexe, couleur_chev, type_chev, pilosite, accessoires, visage], outputs=[gallery, questionnaire, images_select]) #gradio appelle la fonction selection_images qui aura en entrée l'input
-    button2.click(images_to_actions, inputs=[], outputs=[images_select, actions])
 
-demo.launch()
+
+
+
+# ---------------------------------------------------------------------------------------
+# Fonction qui permet de retourner au questionnaire si besoin
+# ---------------------------------------------------------------------------------------
+
+def retour_selection():
+    """
+    Revient à la zone de sélection des images sans toucher
+    aux cases cochées ni aux images déjà affichées
+    """
+    return gr.update(visible=True), gr.update(visible=False)
+
+
+def retour_questionnaire():
+    """
+    Permet de revenir au questionnaire si besoin.
+    """
+    return gr.update(visible=True), gr.update(visible=False)
+
 

@@ -51,9 +51,12 @@ def interpolate_images(img1, img2, t=0.5):
     return decode(z_interp, shape)
 
 
-# -----------------------------------------------------------------------------
-# Chargement des attributs (CelebA)
-# -----------------------------------------------------------------------------
+# -------------------------------------------------------------------------------------------------------
+# Modification d’un attribut dans l’espace latent (mutation, ajout/suppression caractéristique)
+# -------------------------------------------------------------------------------------------------------
+
+#Chargement des attributs (CelebA)
+
 def load_attributs(txt_file='list_attr_celeba.txt'):
     '''    
     Charge les attributs en binaire (-1 ou 1) pour chaque image
@@ -81,9 +84,17 @@ def load_attributs(txt_file='list_attr_celeba.txt'):
     return images_id, dico_attributs
 
 
-# -----------------------------------------------------------------------------
+
 # Calcul des directions latentes
-# -----------------------------------------------------------------------------
+
+
+features = ['5_o_Clock_Shadow', 'Arched_Eyebrows', 'Attractive', 'Bags_Under_Eyes', 'Bald', 'Bangs', 'Big_Lips', 'Big_Nose', 'Black_Hair', 'Blond_Hair',
+             'Blurry', 'Brown_Hair', 'Bushy_Eyebrows', 'Chubby', 'Double_Chin', 'Eyeglasses', 'Goatee', 'Gray_Hair', 'Heavy_Makeup', 'High_Cheekbones',
+             'Male','Mouth_Slightly_Open','Mustache', 'Narrow_Eyes', 'No_Beard', 'Oval_Face', 'Pale_Skin', 'Pointy_Nose', 'Receding_Hairline',
+             'Rosy_Cheeks','Sideburns','Smiling', 'Straight_Hair', 'Wavy_Hair', 'Wearing_Earrings', 'Wearing_Hat', 'Wearing_Lipstick', 'Wearing_Necklace', 'Wearing_Necktie','Young' ]
+
+
+
 def compute_directions(features, images_id, dico_attributs, vecteurs_latents): 
     '''
     Calcule les directions pour chaque caractéristique (chaque feature)
@@ -125,9 +136,8 @@ def compute_directions(features, images_id, dico_attributs, vecteurs_latents):
     return dico_direction
 
 
-# -----------------------------------------------------------------------------
-# Modification d’un attribut dans l’espace latent
-# -----------------------------------------------------------------------------
+# Modification de l'attribut 
+
 def modif_attribut(latent_original, dico_direction, attribut, modification, alpha=1.0): 
     '''
     Ajoute ou supprime un attribut dans le vecteur latent
@@ -147,6 +157,9 @@ def modif_attribut(latent_original, dico_direction, attribut, modification, alph
     return nouv_latent
 
 
+#autre version ? : on propose à l'utilisateur de choisir plusieurs attributs à modifier parmi une liste (voir si on donne les noms tels quels dans la liste features ou alors on donne d'autres noms avec explication et on fait le lien nous même)
+#pour faire plusieurs modifications de plusieurs attributs -> boucles 
+
 
 
 
@@ -157,45 +170,15 @@ def modif_attribut(latent_original, dico_direction, attribut, modification, alph
 
 ## CODE Salomé
 
-
-
 #-----------------------------------------------------------------------------
 # Mélange d'images 
 #-----------------------------------------------------------------------------
 
 #additioner vect latents, en faisant moyennes des vecteurs latents de plusieurs images, etc.
 
-#-----------------------------------------------------------------------------
-# Ajoute ou suppression d'une caractéristique 
-#-----------------------------------------------------------------------------
-#features = ['5_o_Clock_Shadow', 'Arched_Eyebrows', 'Attractive', 'Bags_Under_Eyes', 'Bald', 'Bangs', 'Big_Lips', 'Big_Nose', 'Black_Hair', 'Blond_Hair',
-#             'Blurry', 'Brown_Hair', 'Bushy_Eyebrows', 'Chubby', 'Double_Chin', 'Eyeglasses', 'Goatee', 'Gray_Hair', 'Heavy_Makeup', 'High_Cheekbones',
- #            'Male','Mouth_Slightly_Open','Mustache', 'Narrow_Eyes', 'No_Beard', 'Oval_Face', 'Pale_Skin', 'Pointy_Nose', 'Receding_Hairline',
-   #          'Rosy_Cheeks','Sideburns','Smiling', 'Straight_Hair', 'Wavy_Hair', 'Wearing_Earrings', 'Wearing_Hat', 'Wearing_Lipstick', 'Wearing_Necklace', 'Wearing_Necktie','Young' ]
 
 
 
-# à retester et comparer avec la mienne une fois quìon a le fichier txt
-
-#def load_attributs(txt_file = 'list_attr_celeba.txt'): #ajouter le dataset et ce fichier
-    '''    
-    Charge les attributs en binaire (-1 ou 1) pour chaque image
-    Retour:
-        Dict {image_id: [features]}
-    '''    
-    dico_attributs = {}
-    images_id = []
-    with open (txt_file, 'r') as file : 
-        for line in file : 
-            parties = line.strip().split()
-            image_id = parties[0] #id de l'image 
-            images_id.append(image_id)
-            
-            features = []
-            for x in parties[1:]:
-                features.append(x) #creation des listes des attributs binaires pour l'image
-            dico_attributs[image_id] = features #ajout dans le dico de l'image et de ses features
-    return images_id, dico_attributs
 
 
 
@@ -205,21 +188,7 @@ def modif_attribut(latent_original, dico_direction, attribut, modification, alph
 
 
 
-#def modif_attribut(latent_original , dico_direction, attribut, modification, alpha = 1.0): 
-    '''
-    Fonction qui modifie une image en ajoutant ou en supprimant un attribut donné 
-    modification : ajout ou suppression (de l'attribut)
 
-    '''
-    if modification == 'ajout' : 
-        nouv_latent = latent_original + dico_direction['attribut']
-    elif modification == 'suppression' :
-        nouv_latent = latent_original - dico_direction['attribut']
-
-    return nouv_latent 
-
-#autre version : on propose à l'utilisateur de choisir plusieurs attributs à modifier parmi une liste (voir si on donne les noms tels quels dans la liste features ou alors on donne d'autres noms avec explication et on fait le lien nous même)
-#pour faire plusieurs modifications de plusieurs attributs -> boucles 
     
 
 

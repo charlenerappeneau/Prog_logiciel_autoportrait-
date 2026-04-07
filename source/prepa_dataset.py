@@ -1,5 +1,4 @@
 import pandas as pd
-import gradio as gr 
 
 # Idée : construit un DataFrame pd qui contient comme lignes les images (leur id) et comme colonne les attributs (Glasses, Male,...). Si l'attribut est présent mettre 1 dans la case
 # correspondante, sinon mettre -1
@@ -12,8 +11,7 @@ def load_attributes(file_path = 'dataset/list_attr_celeba.txt'):
         - Lignes suivantes : une image par ligne avec : id_image attribut1 attribut2 ...
             Exemple : 0000001 -1 1 ...
         1 signifie que l'attribut est présent (exemple : a les cheveux blonds), -1 singnifie que l'attribut est absent (n'a pas les cheveux blonds)
-    
-        
+
     Cette fonction charge ce fichier texte d'attributs d'images  et le convertit en DataFrame pandas.
     Le DataFrame permettra de filtrer facilement les images selon les attributs choisis par l'utilisateur dans l'interface graphique.
     
@@ -47,7 +45,7 @@ def load_attributes(file_path = 'dataset/list_attr_celeba.txt'):
 
 def load_identities(file_path = 'dataset/identity_CelebA.txt') : 
     '''
-    Le data set CelebA contient au total les images de 10 177 personnes. Ainsi, plusieurs images sont susceptibles d'être associée à la même personne (la même 'identité').
+    Le data set CelebA contient au total 202599 images de 10 177 personnes. Ainsi, plusieurs images sont susceptibles d'être associée à la même personne (la même 'identité').
     Le fichier texte 'identity_CelebA.txt' associe chaque image à un numéro d'identité (exemple : 000010.jpg 612)
 
     Cette fonction charge ce fichier sous frome de DataFrame pandas.
@@ -72,8 +70,6 @@ def load_identities(file_path = 'dataset/identity_CelebA.txt') :
     
     df_identity = pd.DataFrame(data, columns = attributs)
     return df_identity
-
-
 
 
 def merge_attributes_id(df_attributes, df_identities):
@@ -103,29 +99,91 @@ def merge_attributes_id(df_attributes, df_identities):
 
 
 
-def mapping_features(): 
-    '''
-    Cette fonction crée une correspondance entre ce que l'utilisateur choisit lors du questionnaire et ce que comprend le dataset de CelebA (les attributs)
+def build_requirements(sexe, couleur_chev, type_chev): 
+    # pilosite, visage, accessoires
     
     '''
+    Cette fonction construit un dictionnaire de contraintes à partir des choix effectués oar l'utilisateur lors du questionnaire. 
+    Elle assure la correspondance entre les r"ponses du questionnaire (exprimées avec des termes compréhensibles par l'utilisateur) et les noms des attributs du dataset CelebA.
+    
+    Paramètres : 
+        Réponse du questionnaire (sexe, cheveux, accessoires,...) provenant de l'interface Gradio.
+    
+    Retour : 
+        requirements (dict) 
+            Dictionnaire contenant les contraintes à appliquer pour filtrer les images du dataset CelebA.     
+    '''
+    requirements = {}
+    
+    #-------------------------------------------------------------------------------------
+    # Correspondance entre les choix dans le questionnaire et attributs du dataset 
+    #-------------------------------------------------------------------------------------
+    
     sexe_map = {"Homme" : {"Male" : 1}, "Femme" :  {'Male' : -1} } #si l'utilisateur choisit 'Homme' cela correspond à la colonne 'Male' qui a pour valeur 1
     hair_color_map = { "Noir" : {"Black_Hair" : 1}, "Blond" : {"Blond_Hair" : 1}, "Brun" : {"Brown_Hair" : 1}, "Chauve" : {"Bald" : 1}} #si l'utilisateur choisit 'Blond' cela correspond à la colonne 'Blond_Hair' qui a pour valeur 1
+    hair_type = {"Raides" : {"Straight_Hair" : 1}, "Ondulés" : {"Wavy_Hair" : 1} }
     pilosity_map = {"Barbe" : { "5_o_Clock_Shadow" : 1}, "Moustache" : {"Mustache" : 1}, "Bouc" : {"Goatee": 1} , "Frange" : {"Bangs" : 1}, "Sideburns" : {"Sideburns" : 1}, "Calvitie frontale" : {"Receding_Hairline" : 1}}
-    facial_features_map = {"Joues rosées" : {"Rosy_Cheeks" : 1}, "Nez pointu" : {"Pointy_Nose" : 1},"Peau pâle" : { "Pale_Skin" : 1}, "Visage ovale" : {"Oval_Face0 : 1"}, "Yeux étroits" : {"Narrow_Eyes" : 1}, "Pommettes hautes" : {"High_Cheekbones" : 1}, "Bouche entrouverte" : {"Mouth_Slightly_Open" : 1}, "Double menton" : {"Double_Chin" : 1}, "Sourcils épais" : {"Bushy_Eyebrows" : 1}, 
+    facial_features_map = {"Joues rosées" : {"Rosy_Cheeks" : 1}, "Nez pointu" : {"Pointy_Nose" : 1},"Peau pâle" : { "Pale_Skin" : 1}, "Visage ovale" : {"Oval_Face : 1"}, "Yeux étroits" : {"Narrow_Eyes" : 1}, "Pommettes hautes" : {"High_Cheekbones" : 1}, "Bouche entrouverte" : {"Mouth_Slightly_Open" : 1}, "Double menton" : {"Double_Chin" : 1}, "Sourcils épais" : {"Bushy_Eyebrows" : 1}, 
                            "Gros nez" : {"Big_Nose" : 1 },"Lèvres pulpeuses" : {"Big_Lips" : 1},"Cernes" : {"Bags_Under_Eyes" : 1}}
     accessories_map = {"Lunettes" : {"Eyeglasses" : 1},"Maquillage prononcé" : {"Heavy_Makeup" : 1},"Boucles d'oreilles" : {"Wearing_Earrings" : 1},"Chapeau" : {"Wearing_Hat" : 1},"Rouge à lèvres" : {"Wearing_Lipstick" : 1},"Collier" : {"Wearing_Necklace" : 1},"Cravate" : {"Wearing_Necktie" : 1}}
 
-    return sexe_map, hair_color_map, pilosity_map, facial_features_map, accessories_map
+    #-------------------------------------------------------------------------------------
+    # Création du dictionnaire requirements basés sur les réponses de l'utilisateur
+    #-------------------------------------------------------------------------------------
+    if sexe in sexe_map : 
+        requirements.update(sexe_map[sexe])
+    
+    if couleur_chev in hair_color_map :
+        requirements.update(hair_color_map[couleur_chev])
+    
+    if type_chev in hair_type : 
+        requirements.update(hair_type[type_chev])
+
+    '''
+    if pilosite : 
+        for element in pilosite :
+            if element in pilosity_map :
+                requirements.update(pilosity_map[element])
+    
+    if visage : 
+        for element in visage :
+            if element in facial_features_map :
+                requirements.update(facial_features_map[element])
+    
+    if accessoires : 
+        for element in accessoires :
+            if element in accessories_map :
+                requirements.update(accessories_map[element])
+
+    print(f'Verif_requirements : {requirements}')
+    '''
+    return requirements
 
 
+def filtrage_dataset(df_celebA, requirements) : 
+    '''
+    Cette fonction filtre un df d'images selon un ensemble de contraintes définies apr l'utilisateur. Elle applique successivement des conditions sur les
+    colonnes du df afin de conserver que les images correspondants aux attributs demandés.
 
+    Parametres : 
+        df_celebA (pandas.DataFrame)
+            DataFrame contenant les images et leurs attributs
+        
+        requirements (dict)
+            Dictionnaire de contraintes définies par l'utilisateur (choix des attributs)
+    
+    Retour : 
+        filtered_df (pandas.DataFrame)
+            Sous-ensemble du DataFrame initial contenant uniquement les images respectant toutes les contraintes. 
+    '''
+    filtered_df = df_celebA.copy()
 
+    for attribut, value in requirements.items():
+        if attribut in filtered_df.columns : 
+            filtered_df = filtered_df[filtered_df[attribut] == value] #garde seulement les lignes où la colonne de l'attribut  = valeur 
+        
+    return filtered_df
 
-
-def selection_images(sexe, couleur_chev, type_chev, yeux, lunettes, barbe):
-    images = [] #images qui vont être sélectionnaires
-    #code (voir cmt on va organiser les imgaes, dico ? ect...)
-    return (images,gr.update(visible=False),gr.update(visible=True))
 
 
 #-----------------------------------------------
@@ -149,3 +207,9 @@ if __name__ == "__main__":
     df_merge = merge_attributes_id(df_attr, df_id)
     print(f'Taille tableau : {df_merge.shape}') #devrait donner 202599 lignes et 42 colonnes (image_id + 40 attributs + identity)
     print(df_merge.head())
+
+
+
+
+
+
