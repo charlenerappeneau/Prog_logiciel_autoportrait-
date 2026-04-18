@@ -4,21 +4,33 @@ from PIL import Image #bibliotheque pour manipulation d'images
 #-----------------------------------------------------------------------------
 # Reconstruction d'images  
 #-----------------------------------------------------------------------------
-def encode(image):
-    """Placeholder encodeur (image -> vecteur latent)"""
-    img = np.array(image)
-    return img.flatten() / 255.0  # simulation
+import torch
+from torchvision import transforms
+from vae_pytorch import VAE # assuming it is physically linked in code
 
-def decode(latent, shape):
-    """Placeholder decodeur (vecteur latent -> image)"""
-    img = (latent * 255.0).reshape(shape).astype(np.uint8)
-    return Image.fromarray(img)
- 
+# initialize model
+model = VAE()
+model.load_state_dict(torch.load('vaemodels-igimu/vae_model_30.pth', map_location='cpu'))
+model.eval()
+
+transform = transforms.Compose([transforms.Resize(128), transforms.CenterCrop(128), transforms.ToTensor()])
+
+def encode(image):
+    tensor = transform(image).unsqueeze(0)
+    mu, log_var = model.encode(tensor)
+    z = model.reparameterize(mu, log_var)
+    return z.detach().numpy()
+
+def decode(latent, shape=None):
+    z = torch.from_numpy(latent)
+    out = model.decode(z).reshape(-1, 3, 128, 128).squeeze(0)
+    out_img = out.detach().permute(1, 2, 0).numpy() * 255.0
+    return Image.fromarray(out_img.astype(np.uint8))
 
 def reconstruct_image(image):
     """
     Cette fonction prend une image en entrée
-    Placeholder pour reconstruction avec VAE
+    Reconstruction avec VAE
     """
     if image is None:
         return None
@@ -26,7 +38,7 @@ def reconstruct_image(image):
     img = np.array(image) #conversion image en tableau numpy
 
     latent = encode(image)
-    reconstructed = decode(latent, img_array.shape)
+    reconstructed = decode(latent, img.shape)
 
     return reconstructed
 
@@ -37,10 +49,13 @@ def interpolate_images(img1, img2, t=0.5):
     """
     Interpolation dans l'espace latent entre deux images
     t=0.5 correspond à une interpolation à mi-chemin
-
     """
     if img1 is None or img2 is None:
         return None
+
+    # S'assurer que les deux images ont la même taille
+    if img1.size != img2.size:
+        img2 = img2.resize(img1.size)
 
     z1 = encode(img1)
     z2 = encode(img2)
@@ -49,6 +64,23 @@ def interpolate_images(img1, img2, t=0.5):
 
     shape = np.array(img1).shape
     return decode(z_interp, shape)
+
+def blend_images(img1, img2, alpha=0.5):
+    """
+    Mélange classique (Pixel blending) d'images
+    """
+    if img1 is None or img2 is None:
+        return None
+    
+    # S'assurer que les deux images ont la même taille
+    if img1.size != img2.size:
+        img2 = img2.resize(img1.size)
+        
+    img1_arr = np.array(img1).astype(float)
+    img2_arr = np.array(img2).astype(float)
+    
+    blended = (1 - alpha) * img1_arr + alpha * img2_arr
+    return Image.fromarray(blended.astype(np.uint8))
 
 
 # -------------------------------------------------------------------------------------------------------
@@ -97,41 +129,29 @@ features = ['5_o_Clock_Shadow', 'Arched_Eyebrows', 'Attractive', 'Bags_Under_Eye
 
 def compute_directions(features, images_id, dico_attributs, vecteurs_latents): 
     '''
-    Calcule les directions pour chaque caractéristique (chaque feature)
-    
-    Parametres : 
-        features : liste de str de tous les attributs
-        images_id : liste des id de toutes les images
-        vecteurs_latents : array de dimensions (nbr_images,nbr de latent_dim) qui contient les vecteurs latents de chaque image après AE
-        dico_attributs : dict{image_id : [features]} qui contient tous les attributs de chaque image (en binaires : -1 ou 1)
-
-    Retour : 
-        dico_direction : dict{feature : vecteur_direction} qui contient pour chaque feature (Blond_hair,...) le vecteur de direction correspondant 
-    
+    Calcule les directions pour chaque caractéristique de façon vectorisée (plus rapide)
     ''' 
     dico_direction = {}
     
-    for i, feature in enumerate(features) : #pour chaque attribut
-        with_feature = []
-        without_feature = []
+    # Convertir en tableau numpy pour un accès plus rapide
+    vecteurs_latents = np.array(vecteurs_latents)
+    
+    for i, feature in enumerate(features): 
+        # Créer des masques booléens
+        has_feature = np.array([dico_attributs[img_id][i] == 1 for img_id in images_id])
+        not_have_feature = np.array([dico_attributs[img_id][i] == -1 for img_id in images_id])
         
-        for j, id in enumerate(images_id): #on regarde si l'attribut est présent ou pas dans chaque image 
-            if dico_attributs['id'][i] == 1 : #l'attribut est présent dans l'image 
-                with_feature.append(vecteurs_latents[j]) #on ajoute le vecteur latent correspondant à cette image dans la liste des 'with_features'
-            elif dico_attributs['id'][i] == -1 : #l'attribut n'est pas présent dans l'image 
-                without_feature.append(vecteurs_latents[j]) #on ajoute le vecteur latent correspondant à cette image dans la liste des 'without_features'
+        with_feature = vecteurs_latents[has_feature]
+        without_feature = vecteurs_latents[not_have_feature]
         
-        # éviter erreurs si listes vides
         if len(with_feature) == 0 or len(without_feature) == 0:
             continue
 
-        # Moyennes des vecteurs latents dans with_feature et without_features 
-        moy_with = np.mean(with_feature, axis = 0)
-        moy_without = np.mean(without_feature, axis = 0)
+        moy_with = np.mean(with_feature, axis=0)
+        moy_without = np.mean(without_feature, axis=0)
 
-        # Computing la direction en faisant la soustraction de with et de without : 
         direction = moy_with - moy_without
-        dico_direction['feature'] = direction
+        dico_direction[feature] = direction
     
     return dico_direction
 
@@ -168,16 +188,7 @@ def modif_attribut(latent_original, dico_direction, attribut, modification, alph
 
 
 
-## CODE Salomé
-
-#-----------------------------------------------------------------------------
-# Mélange d'images 
-#-----------------------------------------------------------------------------
-
-#additioner vect latents, en faisant moyennes des vecteurs latents de plusieurs images, etc.
-
-
-
+#
 
 
 
