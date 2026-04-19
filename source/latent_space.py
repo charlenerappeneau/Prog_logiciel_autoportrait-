@@ -1,5 +1,7 @@
 import numpy as np #bibliotheque pour manipuler tableaux numeriques
 from PIL import Image #bibliotheque pour manipulation d'images
+import os
+from source.attributes_mapping import (SEXE_MAP, HAIR_COLOR_MAP, HAIR_TYPE_MAP, PILOSITY_MAP, FACIAL_FEATURES_MAP, ACCESSORIES_MAP)
 
 #-----------------------------------------------------------------------------
 # Reconstruction d'images  
@@ -131,41 +133,188 @@ def load_attributs(txt_file='list_attr_celeba.txt'):
 
 # Calcul des directions latentes
 
-
-features = ['5_o_Clock_Shadow', 'Arched_Eyebrows', 'Attractive', 'Bags_Under_Eyes', 'Bald', 'Bangs', 'Big_Lips', 'Big_Nose', 'Black_Hair', 'Blond_Hair',
-             'Blurry', 'Brown_Hair', 'Bushy_Eyebrows', 'Chubby', 'Double_Chin', 'Eyeglasses', 'Goatee', 'Gray_Hair', 'Heavy_Makeup', 'High_Cheekbones',
-             'Male','Mouth_Slightly_Open','Mustache', 'Narrow_Eyes', 'No_Beard', 'Oval_Face', 'Pale_Skin', 'Pointy_Nose', 'Receding_Hairline',
-             'Rosy_Cheeks','Sideburns','Smiling', 'Straight_Hair', 'Wavy_Hair', 'Wearing_Earrings', 'Wearing_Hat', 'Wearing_Lipstick', 'Wearing_Necklace', 'Wearing_Necktie','Young' ]
-
-
-
-def compute_directions(features, images_id, dico_attributs, vecteurs_latents): 
+def compute_latent_vectors(df, image_folder, max_images=None):
     '''
-    Calcule les directions pour chaque caractéristique de façon vectorisée (plus rapide)
-    ''' 
-    dico_direction = {}
-    
-    # Convertir en tableau numpy pour un accès plus rapide
-    vecteurs_latents = np.array(vecteurs_latents)
-    
-    for i, feature in enumerate(features): 
-        # Créer des masques booléens
-        has_feature = np.array([dico_attributs[img_id][i] == 1 for img_id in images_id])
-        not_have_feature = np.array([dico_attributs[img_id][i] == -1 for img_id in images_id])
-        
-        with_feature = vecteurs_latents[has_feature]
-        without_feature = vecteurs_latents[not_have_feature]
-        
-        if len(with_feature) == 0 or len(without_feature) == 0:
+    Calcule les vecteurs latents des images contenues dans un DataFrame.
+
+    Paramètres :
+        df : pandas.DataFrame
+            DataFrame contenant au minimum la colonne 'image_id'
+        image_folder : str
+            Dossier contenant les images CelebA
+        max_images : int ou None
+            Si renseigné, limite le nombre d'images traitées
+            (utile pour les tests)
+
+    Retour :
+        df_latent : pandas.DataFrame
+            Même DataFrame que df, avec une nouvelle colonne 'latent'
+            contenant les vecteurs latents
+    '''
+    # Copie du DataFrame pour ne pas modifier l’original
+    df_latent = df.copy()
+
+    # Si max_images est donné, on garde seulement les premières lignes (utile pour tester la fct)
+    if max_images is not None:
+        df_latent = df_latent.iloc[:max_images].copy()
+
+    # Liste qui contiendra les latents
+    liste_latents = []
+    # Boucle sur chaque image
+    for image_id in df_latent["image_id"]:
+        image_path = os.path.join(image_folder, image_id)
+        try:
+            # Ouvre image
+            image = Image.open(image_path).convert("RGB")
+            # Encode dans l’espace latent
+            latent = encode(image)
+            # Retire dimension batch : (1,128) -> (128,)
+            latent = latent.squeeze()
+            liste_latents.append(latent)
+
+        except Exception as e:
+            print(f"Erreur avec {image_id} : {e}")
+            # On met None si erreur
+            liste_latents.append(None)
+    # Ajout de la colonne latent
+    df_latent["latent"] = liste_latents
+
+    return df_latent
+
+
+def compute_directions(df_latent, feature_names):
+    '''
+    Calcule les directions latentes des attributs à partir d'un DataFrame
+    contenant :
+        - les colonnes d'attributs CelebA (-1 / 1)
+        - une colonne 'latent' contenant les vecteurs latents
+
+    Parametres : 
+    df_latent : pandas.DataFrame
+        DataFrame contenant :
+        - image_id
+        - les attributs CelebA
+        - la colonne 'latent'
+
+    feature_names : list[str]
+        Liste des attributs pour lesquels on veut calculer une direction
+
+    Retour: 
+        dico_directions : dict
+            Dictionnaire :
+            clé = nom de l'attribut
+            valeur = vecteur direction correspondant
+    '''
+    dico_directions = {}
+
+    # On enlève les lignes où le latent est manquant (au cas où)
+    df_clean = df_latent[df_latent["latent"].notna()].copy()
+
+    # Boucle sur chaque attribut demandé
+    for feature in feature_names:
+        # Vérifie que la colonne existe bien (au cas où)
+        if feature not in df_clean.columns:
+            print(f"Attribut absent du DataFrame : {feature}")
             continue
 
-        moy_with = np.mean(with_feature, axis=0)
-        moy_without = np.mean(without_feature, axis=0)
+        # Groupe des images avec l'attribut
+        df_with = df_clean[df_clean[feature] == 1]
 
-        direction = moy_with - moy_without
-        dico_direction[feature] = direction
-    
-    return dico_direction
+        # Groupe des images sans l'attribut
+        df_without = df_clean[df_clean[feature] == -1]
+
+        # Si un des deux groupes est vide, on ne peut pas calculer de direction
+        if len(df_with) == 0 or len(df_without) == 0:
+            print(f"Attribut ignoré (groupe vide) : {feature}")
+            continue
+
+        # On récupère les vecteurs latents sous forme de matrice numpy
+        latents_with = np.stack(df_with["latent"].values)
+        latents_without = np.stack(df_without["latent"].values)
+
+        # Moyennes des deux groupes
+        mean_with = np.mean(latents_with, axis=0)
+        mean_without = np.mean(latents_without, axis=0)
+
+        # Direction latente
+        direction = mean_with - mean_without
+        # Stockage dans le dictionnaire final
+        dico_directions[feature] = direction
+
+    return dico_directions
+
+
+
+
+def build_modifications(couleur_chev=None, type_chev=None, pilosite=None, visage=None, accessoires=None):
+    '''
+    Construit la liste des modifications à appliquer dans l'espace latent
+    à partir des réponses du questionnaire 2.
+
+    Retour :
+        modifications : list[tuple]
+        Exemple : [("Blond_Hair", "ajout", 1.0),("Eyeglasses", "ajout", 1.0)]
+    '''
+    modifications = []
+
+    # Couleur des cheveux
+    if couleur_chev and couleur_chev != "Aucun changement":
+        if couleur_chev in HAIR_COLOR_MAP:
+            attr = HAIR_COLOR_MAP[couleur_chev]
+            modifications.append((attr, "ajout", 2))
+    # Type de cheveux
+    if type_chev and type_chev != "Aucun changement":
+        if type_chev in HAIR_TYPE_MAP:
+            attr = HAIR_TYPE_MAP[type_chev]
+            modifications.append((attr, "ajout", 2))
+    # Pilosité
+    if pilosite:
+        for element in pilosite:
+            if element in PILOSITY_MAP:
+                attr = PILOSITY_MAP[element]
+                modifications.append((attr, "ajout", 2))
+    # Visage
+    if visage:
+        for element in visage:
+            if element in FACIAL_FEATURES_MAP:
+                attr = FACIAL_FEATURES_MAP[element]
+                modifications.append((attr, "ajout", 2))
+    # Accessoires
+    if accessoires:
+        for element in accessoires:
+            if element in ACCESSORIES_MAP : 
+                attr = ACCESSORIES_MAP[element]
+                modifications.append((attr, "ajout", 2))
+    return modifications
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 # Modification de l'attribut 
@@ -187,6 +336,38 @@ def modif_attribut(latent_original, dico_direction, attribut, modification, alph
         raise ValueError("modification doit être 'ajout' ou 'suppression'")
 
     return nouv_latent
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 #autre version ? : on propose à l'utilisateur de choisir plusieurs attributs à modifier parmi une liste (voir si on donne les noms tels quels dans la liste features ou alors on donne d'autres noms avec explication et on fait le lien nous même)
@@ -232,7 +413,12 @@ def modify_image_attributes(image, dico_direction, modifications):
 
 
 
-
+def load_directions(file_path="dataset/directions_latentes.npy"):
+    '''
+    Charge le dictionnaire des directions latentes sauvegardé.
+    '''
+    dico_direction = np.load(file_path, allow_pickle=True).item()
+    return dico_direction
 
 
 

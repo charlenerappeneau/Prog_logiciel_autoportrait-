@@ -98,7 +98,7 @@ with gr.Blocks() as demo:
 
         result_text = gr.Textbox(label="Message",interactive=False)
 
-        result_image = gr.Image(label="Image résultat")
+        result_image = gr.Image(type="pil", label="Image résultat")
 
         button_retour_selection = gr.Button("Retour à la selection")
 
@@ -175,7 +175,8 @@ with gr.Blocks() as demo:
     reconstruction_button.click(eval_reconstruction, inputs=all_imgs_and_checks, outputs=[result_image, result_text, result_zone, images_select, questionnaire2])
     interpolation_button.click(eval_interpolation, inputs=all_imgs_and_checks, outputs=[result_image, result_text, result_zone, images_select, questionnaire2])
     
-    appliquer_modifs_button.click(appliquer_modifications, inputs=[couleur_chev_q2, type_chev_q2, pilosite_q2, visage_q2, accessoires_q2], outputs=[result_image, result_text])
+    appliquer_modifs_button.click(appliquer_modifications, inputs=[result_image, couleur_chev_q2, type_chev_q2, pilosite_q2, visage_q2, accessoires_q2], outputs=[result_image, result_text])
+    
 
 demo.queue().launch()
 

@@ -1,6 +1,7 @@
 import gradio as gr
 from PIL import Image
 from source.prepa_dataset import *
+from source.latent_space import load_directions, build_modifications, modify_image_attributes
 import os
 
 max_images = 6 
@@ -123,41 +124,38 @@ def verif_selection(selection, action):
 # ---------------------------------------------------------------------------------------
 # Etape 4 : Questionnaire 2 : récupération des modifications ('mutations') demandées
 # ---------------------------------------------------------------------------------------
+dico_direction = load_directions("dataset/directions_latentes.npy")
 
-def appliquer_modifications(couleur_chev_q2, type_chev_q2, pilosite_q2, visage_q2, accessoires_q2):
+
+def appliquer_modifications(image_base, couleur_chev_q2, type_chev_q2, pilosite_q2, visage_q2, accessoires_q2):
     '''
-    Fonction provisoire :
-    pour l'instant, elle ne modifie pas encore l'image dans l'espace latent,
-    car les vecteurs d'attributs ne sont pas encore calculés.
-
-    Elle sert juste à récupérer les choix du questionnaire 2
-    et à résumer ce que l'utilisateur veut changer.
+    Applique réellement les modifications demandées à l'image de base
+    en utilisant les directions latentes du VAE.
     '''
+    if image_base is None:
+        return None, "Erreur : aucune image à modifier."
 
-    resume = []
-    resume.append("Modifications demandées :")
+    # Construction de la liste des modifications
+    modifications = build_modifications(couleur_chev=couleur_chev_q2, type_chev=type_chev_q2, pilosite=pilosite_q2, visage=visage_q2, accessoires=accessoires_q2 )
 
-    if couleur_chev_q2 != "Aucun changement":
-        resume.append(f"Couleur des cheveux : {couleur_chev_q2}")
+    print("Modifications demandées :", modifications)
 
-    if type_chev_q2 != "Aucun changement":
-        resume.append(f"Type de cheveux : {type_chev_q2}")
+    if len(modifications) == 0:
+        return image_base, "Aucune modification sélectionnée."
 
-    if pilosite_q2:
-        resume.append(f"Pilosité : {', '.join(pilosite_q2)}")
+    # Application dans l'espace latent
+    image_modifiee = modify_image_attributes(image_base, dico_direction, modifications)
 
-    if visage_q2:
-        resume.append(f"Visage : {', '.join(visage_q2)}")
+    # Texte résumé
+    resume = ["Modifications appliquées :"]
+    for attribut, action, alpha in modifications:
+        resume.append(f"- {attribut} ({action}, alpha={alpha})")
 
-    if accessoires_q2:
-        resume.append(f"Accessoires : {', '.join(accessoires_q2)}")
+    message = "\n".join(resume)
 
-    if len(resume) == 1:
-        resume.append(" Aucun changement sélectionné")
+    return image_modifiee, message
 
 
-    message = "\n".join(resume) #transforme une liste de textes en un seul texte avec retour à la ligne entre chaque élément
-    return None, message
 
 # ---------------------------------------------------------------------------------------
 # Fonction qui permet de retourner au questionnaire si besoin
