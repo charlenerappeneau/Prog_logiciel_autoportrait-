@@ -16,13 +16,13 @@ df_merged = merge_attributes_id(df_attr, df_id)
 # ---------------------------------------------------------------------------------------
 # Etape 1 : affichage d'images en fonction des réponses au questionnaire
 # ---------------------------------------------------------------------------------------
-def selection_images(sexe, couleur_chev, type_chev, pilosite=None, visage=None, accessoires=None) : 
+def selection_images(sexe, couleur_chev, type_chev) : 
     '''
     Filtre le dataset selon les réponsdes de l'utilisateur au questionnaire puis affiche jusqu'à 6 images correspondantes
     '''
-    print("Réponses utilisateur :", sexe, couleur_chev, type_chev, pilosite, visage, accessoires)
+    print("Réponses utilisateur :", sexe, couleur_chev, type_chev)
     
-    requirem = build_requirements(sexe, couleur_chev, type_chev, pilosite, visage, accessoires)
+    requirem = build_requirements(sexe, couleur_chev, type_chev)
     print("Requirements :", requirem)
 
     filtered_df = filtrage_dataset(df_merged, requirem)
@@ -34,11 +34,15 @@ def selection_images(sexe, couleur_chev, type_chev, pilosite=None, visage=None, 
     
     if nombre == 0 : 
         print("Aucune image trouvée")
+        images = [None] * max_images
+        chemins = [None] * max_images
+        blocs = [gr.update(visible=False) for _ in range(max_images)]
+
+        return (*images, *chemins, *blocs, gr.update(visible=True), gr.update(visible=False),"Aucune image proposée")
     
     #Tirage aléatoire des images : 
     selected_images = filtered_df.sample(n=nombre)['image_id']
     liste_images = list(selected_images)
-    
     
     images = []
     chemins = []
@@ -107,24 +111,53 @@ def verif_selection(selection, action):
     '''
     n = len(selection)
 
-    if action == 'interpolation':
+    if action == 'reconstruction':
+        if n != 1:
+            return False, 'Pour la reconstruction, sélectionnez exactement 1 image'
+    elif action == 'interpolation':
         if n != 1 : 
             return False, 'Pour la reconstruction, sélectionnez exactement 2 images'
-    elif action == 'fusion':
-        if n<2 and n > 3:
-            return False, 'Pour la fusion, sélectionniez 2 à 3 images'
-    elif action == 'mutation':
-            return False, 'Pour la mutation, sélectionnez exactement 1 image'
 
-    return True
+    return True, ''
 
 # ---------------------------------------------------------------------------------------
-# Etape 4 : Actions
+# Etape 4 : Questionnaire 2 : récupération des modifications ('mutations') demandées
 # ---------------------------------------------------------------------------------------
 
+def appliquer_modifications(couleur_chev_q2, type_chev_q2, pilosite_q2, visage_q2, accessoires_q2):
+    '''
+    Fonction provisoire :
+    pour l'instant, elle ne modifie pas encore l'image dans l'espace latent,
+    car les vecteurs d'attributs ne sont pas encore calculés.
+
+    Elle sert juste à récupérer les choix du questionnaire 2
+    et à résumer ce que l'utilisateur veut changer.
+    '''
+
+    resume = []
+    resume.append("Modifications demandées :")
+
+    if couleur_chev_q2 != "Aucun changement":
+        resume.append(f"Couleur des cheveux : {couleur_chev_q2}")
+
+    if type_chev_q2 != "Aucun changement":
+        resume.append(f"Type de cheveux : {type_chev_q2}")
+
+    if pilosite_q2:
+        resume.append(f"Pilosité : {', '.join(pilosite_q2)}")
+
+    if visage_q2:
+        resume.append(f"Visage : {', '.join(visage_q2)}")
+
+    if accessoires_q2:
+        resume.append(f"Accessoires : {', '.join(accessoires_q2)}")
+
+    if len(resume) == 1:
+        resume.append(" Aucun changement sélectionné")
 
 
-
+    message = "\n".join(resume) #transforme une liste de textes en un seul texte avec retour à la ligne entre chaque élément
+    return None, message
 
 # ---------------------------------------------------------------------------------------
 # Fonction qui permet de retourner au questionnaire si besoin
