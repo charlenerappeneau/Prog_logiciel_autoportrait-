@@ -3,3 +3,13 @@
 
 __pycache__/
 *.pyc
+
+source/__pycache__/
+source/*.pyc
+
+scripts/__pycache__/
+scripts/*.pyc
+
+# Data & Models
+dataset/
+source/vaemodels-igimu/
