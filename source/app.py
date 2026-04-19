@@ -16,13 +16,13 @@ df_merged = merge_attributes_id(df_attr, df_id)
 # ---------------------------------------------------------------------------------------
 # Etape 1 : affichage d'images en fonction des réponses au questionnaire
 # ---------------------------------------------------------------------------------------
-def selection_images(sexe, couleur_chev, type_chev) : 
+def selection_images(sexe, couleur_chev, type_chev, pilosite=None, visage=None, accessoires=None) : 
     '''
     Filtre le dataset selon les réponsdes de l'utilisateur au questionnaire puis affiche jusqu'à 6 images correspondantes
     '''
-    print("Réponses utilisateur :", sexe, couleur_chev, type_chev)
+    print("Réponses utilisateur :", sexe, couleur_chev, type_chev, pilosite, visage, accessoires)
     
-    requirem = build_requirements(sexe, couleur_chev, type_chev)
+    requirem = build_requirements(sexe, couleur_chev, type_chev, pilosite, visage, accessoires)
     print("Requirements :", requirem)
 
     filtered_df = filtrage_dataset(df_merged, requirem)

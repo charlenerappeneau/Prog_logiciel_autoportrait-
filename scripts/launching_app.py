@@ -131,18 +131,50 @@ with gr.Blocks() as demo:
 
 
     #--------------------------------
+    # Fonctions de traitement Gradio
+    #--------------------------------
+    def eval_reconstruction(i1, i2, i3, i4, i5, i6, c1, c2, c3, c4, c5, c6):
+        images = [i1, i2, i3, i4, i5, i6]
+        checks = [c1, c2, c3, c4, c5, c6]
+        selection = [img for img, c in zip(images, checks) if c and img is not None]
+        
+        if len(selection) != 1:
+            # Reste sur la sélection, met un message d'erreur
+            return None, "Erreur : Veuillez sélectionner exactement 1 image pour la reconstruction.", gr.update(visible=True), gr.update(visible=False)
+            
+        res_img = reconstruct_image(selection[0])
+        # Cache la sélection, affiche le résultat
+        return res_img, "Reconstruction réussie !", gr.update(visible=False), gr.update(visible=True)
+
+    def eval_interpolation(i1, i2, i3, i4, i5, i6, c1, c2, c3, c4, c5, c6):
+        images = [i1, i2, i3, i4, i5, i6]
+        checks = [c1, c2, c3, c4, c5, c6]
+        selection = [img for img, c in zip(images, checks) if c and img is not None]
+        
+        if len(selection) != 2:
+            return None, "Erreur : Veuillez sélectionner exactement 2 images pour l'interpolation.", gr.update(visible=True), gr.update(visible=False)
+            
+        res_img = interpolate_images(selection[0], selection[1])
+        return res_img, "Interpolation réussie !", gr.update(visible=False), gr.update(visible=True)
+
+    #--------------------------------
     # Boutons 
     #-------------------------------- 
     
     #Affiche propositions
-    button1.click(selection_images, inputs=[sexe, couleur_chev, type_chev], outputs=[img1, img2, img3, img4, img5, img6, path1, path2, path3, path4, path5, path6, bloc1, bloc2, bloc3, bloc4, bloc5, bloc6, questionnaire, images_select, info]) #gradio appelle la fonction selection_images qui aura en entrée l'input
+    button1.click(selection_images, inputs=[sexe, couleur_chev, type_chev, pilosite, visage, accessoires], outputs=[img1, img2, img3, img4, img5, img6, path1, path2, path3, path4, path5, path6, bloc1, bloc2, bloc3, bloc4, bloc5, bloc6, questionnaire, images_select, info]) #gradio appelle la fonction selection_images qui aura en entrée l'input
     
-
     
     button_retour_quest.click(retour_questionnaire, inputs=[], outputs=[questionnaire, images_select])
-    button_retour_selection.click(retour_selection, inputs = [], outputs = [images_select,result_zone ])
+    button_retour_selection.click(retour_selection, inputs = [], outputs = [images_select, result_zone])
     
-demo.launch()
+    # Boutons d'action
+    all_imgs_and_checks = [img1, img2, img3, img4, img5, img6, check1, check2, check3, check4, check5, check6]
+    
+    reconstruction_button.click(eval_reconstruction, inputs=all_imgs_and_checks, outputs=[result_image, result_text, images_select, result_zone])
+    interpolation_button.click(eval_interpolation, inputs=all_imgs_and_checks, outputs=[result_image, result_text, images_select, result_zone])
+    
+demo.queue().launch()
 
 
 
