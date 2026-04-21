@@ -14,7 +14,7 @@ import gradio as gr
 from PIL import Image
 from torch import le
 from source.app import selection_images, retour_selection, retour_questionnaire, appliquer_modifications
-from source.latent_space import reconstruct_image, interpolate_images, fusion_images
+from source.latent_space import reconstruct_image, fusion_2_images, fusion_3_images
 
 
 #======================================================================
@@ -185,7 +185,7 @@ with gr.Blocks() as demo:
         if len(selection) != 2:
             return None, "Erreur : Veuillez sélectionner exactement 2 images pour l'interpolation.", gr.update(visible=True), gr.update(visible=False), gr.update(visible=False)
             
-        res_img = interpolate_images(selection[0], selection[1])
+        res_img = fusion_2_images(selection[0], selection[1])
         return res_img, "Interpolation réussie !", gr.update(visible=True), gr.update(visible=False), gr.update(visible=True)
 
     
@@ -208,7 +208,7 @@ with gr.Blocks() as demo:
         if len(selection) != 3:
             return None, "Erreur : Veuillez sélectionner exactement 3 images pour la fusion.", gr.update(visible=True), gr.update(visible=False), gr.update(visible=False)
             
-        res_img = fusion_images(selection[0], selection[1], selection[2]) 
+        res_img = fusion_3_images(selection[0], selection[1], selection[2]) 
         return res_img, "Fusion réussie !", gr.update(visible=True), gr.update(visible=False), gr.update(visible=True)
     
     #----------------------------------------------------------------
