@@ -60,42 +60,42 @@ class VAE(nn.Module):
 		"""
 		Encode une image en paramètres (mu, log_var) de la distribution latente.
 		"""
-			result=self.encoder(x)
-			result=torch.flatten(result, start_dim=1)
-			mu=self.fc_mu(result)
-			log_var=self.fc_var(result)
-			return mu, log_var
+		result=self.encoder(x)
+		result=torch.flatten(result, start_dim=1)
+		mu=self.fc_mu(result)
+		log_var=self.fc_var(result)
+		return mu, log_var
 
 	def reparameterize(self, mu, log_var):
 		"""
 		reparamétrisation :
 		z = mu + sigma * epsilon
 		"""
-			std=torch.exp(0.5*log_var)
-			eps=torch.randn_like(std)
-			return eps*std+mu
+		std=torch.exp(0.5*log_var)
+		eps=torch.randn_like(std)
+		return eps*std+mu
 
 	def decode(self, z):
 		"""
 		Reconstruit une image à partir d'un vecteur latent z.
 		"""
-			output=self.decoder_input(z)
-			output=output.view(-1, self.final_dim, self.size, self.size)
-			output=self.decoder(output)
-			output=self.final_layer(output)
-			output=data_output(output)
-			output=torch.flatten(output, start_dim=1)
-			output=torch.nan_to_num(output)
-			return output
+		output=self.decoder_input(z)
+		output=output.view(-1, self.final_dim, self.size, self.size)
+		output=self.decoder(output)
+		output=self.final_layer(output)
+		output=data_output(output)
+		output=torch.flatten(output, start_dim=1)
+		output=torch.nan_to_num(output)
+		return output
 
 	def forward(self, x):#enchaine les trois fonctions
 		"""
 		Pipeline complet du VAE :
 		encode → reparameterize → decode
 		"""
-			mu, log_var=self.encode(x)
-			z=self.reparameterize(mu, log_var)
-			return self.decode(z), mu, log_var
+		mu, log_var=self.encode(x)
+		z=self.reparameterize(mu, log_var)
+		return self.decode(z), mu, log_var
 
 
 
