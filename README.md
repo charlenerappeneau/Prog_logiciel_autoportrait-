@@ -2,6 +2,9 @@
 
 Application de génération et modification de portraits basée sur un **Variational Autoencoder (VAE)** entraîné sur le dataset **CelebA**.
 
+------------------------------------------------------------------
+# ! ATTENTION : remarque important dans la partie B - Etape 1 !
+------------------------------------------------------------------
 ## L’application permet :
 
 - de proposer des visages selon des caractéristiques choisies
@@ -78,7 +81,7 @@ Ouvrir un terminal puis exécuter (selon SSH ou HTTPS au choix) :
 git clone https://github.com/charlenerappeneau/Prog_logiciel_autoportrait-.git
 ```
 
-### Version HTTPS
+### Version ssh 
 
 ```bash 
 git clone git@github.com:charlenerappeneau/Prog_logiciel_autoportrait-.git
@@ -87,7 +90,6 @@ git clone git@github.com:charlenerappeneau/Prog_logiciel_autoportrait-.git
 Puis aller dans le dossier du projet en exécutant : 
 
 ```bash 
-cd Prog_logiciel_autoportrait-
 cd Prog_logiciel_autoportrait-
 ```
 
@@ -259,6 +261,10 @@ Une fois les choix effectués, cliquer sur :
 
 `Voir les propositions`
 
+-------------------------------------------------------
+## ! ATTENTION REMARQUE IMPORTANTE ! 
+-------------------------------------------------------
+Notre interface semble contenir un bug lorsqu'on appuie sur 'Voir les proposition'. En effet, la proposition d'images semble durer très longtemps (preprocessing long). Pour éviter d'attendre, cliquer sur 'Revenir au questionnaire' puis re cliquer sur 'Voir les propositions', les images apparaissent directement. 
 
 ## ÉTAPE 2 : PROPOSITIONS D’IMAGES
 
