@@ -6,8 +6,5 @@ scripts/__pycache__/
 *.pyc
 
 
-dataset/
 
-dataset/df_latents.pkl
->>>>>>> bb3fc280c (dataset ajouté)
->>>>>>> 230ebaee2 (gitig)
+
