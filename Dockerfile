@@ -1,37 +1,71 @@
-# 1. Utiliser une image Python avec les outils de base
+# DOCKERFILE POUR L'APPLICATION GRADIO
+
+
+# IMAGE DE BASE
+# Utilise une image officielle Python légère (version 3.10)
+# contenant Python déjà installé.
 FROM python:3.10-slim
 
-# 2. Définir le dossier de travail dans le conteneur
+
+
+# Tous les fichiers du projet seront placés dans /app
+# à l'intérieur du conteneur Docker.
 WORKDIR /app
 
-# 3. Empêcher Python de créer des fichiers .pyc (plus propre)
-ENV PYTHONDONTWRITEBYTECODE 1
-ENV PYTHONUNBUFFERED 1
 
-# 4. INSTALLATION DES DÉPENDANCES SYSTÈME
-# C'est crucial pour PIL (Pillow) et OpenCV qui gèrent tes images
+
+# VARIABLES PYTHON
+# Empêche Python de créer des fichiers .pyc
+# (fichiers compilés inutiles ici)
+ENV PYTHONDONTWRITEBYTECODE=1
+
+# Force l'affichage immédiat des logs dans le terminal
+# (pratique pour voir les prints et erreurs en direct)
+ENV PYTHONUNBUFFERED=1
+
+
+
+# DÉPENDANCES SYSTÈME : 
+
+# Mise à jour des paquets Linux puis installation de librairies
+# nécessaires pour l'affichage et traitement d'images (Pillow, OpenCV, ...)
 RUN apt-get update && apt-get install -y \
     libgl1-mesa-glx \
     libglib2.0-0 \
     && rm -rf /var/lib/apt/lists/*
 
-# 5. INSTALLATION DES LIBRAIRIES PYTHON
-# On copie d'abord le requirements pour profiter du cache Docker
+
+
+# INSTALLATION DES LIBRAIRIES PYTHON : 
+# On copie d'abord uniquement requirements.txt
+# pour profiter du cache Docker si le code change
+
 COPY requirements.txt .
+
+# Installe toutes les dépendances Python du projet : gradio, torch, pandas, numpy, pillow, etc.
 RUN pip install --no-cache-dir -r requirements.txt
 
-# 6. COPIE DU PROJET
-# On copie tout le contenu de ton dossier actuel dans /app
+
+
+# COPIE DU PROJET
+# Copie tout le contenu du dépôt Git dans /app (code source, scripts, main.py, etc.).
 COPY . .
 
-# 7. RÉGLAGE DES VARIABLES D'ENVIRONNEMENT (Spécifique Gradio)
-# Indique à Gradio d'écouter sur toutes les interfaces sur le port 7860
+
+
+# VARIABLES GRADIO
+# Force Gradio à marcher sur toutes les interfaces réseau
+# nécessaire pour accéder à l'application depuis le navigateur
 ENV GRADIO_SERVER_NAME="0.0.0.0"
+
+# Définit le port utilisé par Gradio
 ENV GRADIO_SERVER_PORT=7860
 
-# 8. EXPOSITION DU PORT
+# Indique que le conteneur utilise le port 7860.
 EXPOSE 7860
 
-# 9. COMMANDE DE LANCEMENT
-# Utilise bien le chemin vers ton script principal
-CMD ["python", "scripts/launching_app.py"]
+
+
+# COMMANDE DE LANCEMENT
+# Quand on exécute le conteneur, lance l'application principale
+CMD ["python", "main.py"]

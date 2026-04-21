@@ -249,5 +249,10 @@ with gr.Blocks() as demo:
     fusion_button.click(eval_fusion, inputs=all_imgs_and_checks, outputs=[result_image, result_text, result_zone, images_select, questionnaire2]) #bouton qui permet de lancer la fonction de fusion, il vérifie que le nombre d'images sélectionnées est bien égal à 3, sinon il affiche un message d'erreur, si trois images sont sélectionnées, il affiche le résultat de la fusion et le questionnaire 2 pour les modifications basées sur les directions latentes
     appliquer_modifs_button.click(appliquer_modifications, inputs=[result_image, couleur_chev_q2, type_chev_q2, pilosite_q2, visage_q2, accessoires_q2], outputs=[result_image, result_text]) #bouton qui permet d'appliquer les modifications choisies dans le questionnaire 2, il utilise les directions latentes calculées précédemment pour modifier le portrait généré en fonction des changements demandés par l'utilisateur, il affiche ensuite le résultat modifié et un message de succès
 
-demo.queue().launch()
+
+def main(): #sert à lancer l'application Gradio, elle est appelée à la fin du script pour démarrer l'interface et rendre le serveur accessible à l'adresse http://localhost:7860 depuis un autre appareil
+    demo.queue().launch(server_name="0.0.0.0", server_port=7860) # le serveur est accessible à l'adresse http://localhost:7860  depuis un autre appareil
+
+if __name__ == "__main__": #sert a vérifier que le script est exécuté directement et non importé en tant que module, si c'est le cas, il appelle la fonction main() pour lancer l'application Gradio
+    main()
 
