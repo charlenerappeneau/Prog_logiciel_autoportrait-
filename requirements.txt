@@ -6,3 +6,11 @@ gradio
 matplotlib
 scikit-learn
 pandas
+os 
+PIL 
+torch.utils.data
+torchivision.transforms 
+sklearn.model_selection
+torch 
+random
+string
