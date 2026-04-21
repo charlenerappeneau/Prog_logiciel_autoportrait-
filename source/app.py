@@ -13,13 +13,25 @@ df_attr = load_attributes("dataset/list_attr_celeba.txt")
 df_id = load_identities("dataset/identity_CelebA.txt")
 df_merged = merge_attributes_id(df_attr, df_id)
 
-
 # ---------------------------------------------------------------------------------------
 # Etape 1 : affichage d'images en fonction des réponses au questionnaire
 # ---------------------------------------------------------------------------------------
 def selection_images(sexe, couleur_chev, type_chev) : 
     '''
-    Filtre le dataset selon les réponsdes de l'utilisateur au questionnaire puis affiche jusqu'à 6 images correspondantes
+    Cette fonction est appelée lorsque l'utilisateur clique sur 'Afficher les images'
+    Elle récupère les réponses du questionnaire, construit les contraintes de filtrage, filtre le dataset CelebA et affiche les images correspondantes.
+
+    Paramètres :
+        sexe (str) : choix de sexe ("Homme", "Femme", "Aucun changement")
+        couleur_chev (str) : choix de couleur de cheveux (ex: "Blond", "Brun", "Noir", "Rouge", "Aucun changement")
+        type_chev (str) : choix de type de cheveux (ex: "Lisse", "Bouclés", "Ondulés", "Aucun changement")  
+    Retour :
+        images (list[Image]) : liste des images à afficher (taille max_images)
+        chemins (list[str]) : liste des chemins correspondants aux images affichées
+        blocs (list[gr.update]) : liste des mises à jour de visibilité pour les blocs d'affichage des images
+        gr.update(visible) : mise à jour de la visibilité du questionnaire (False pour le cacher)
+        gr.update(visible) : mise à jour de la visibilité du bouton de validation (True pour l'afficher)
+        message (str) : message à afficher indiquant le nombre d'images proposées ou une erreur si aucune image ne correspond aux critères
     '''
     print("Réponses utilisateur :", sexe, couleur_chev, type_chev)
     
@@ -28,7 +40,6 @@ def selection_images(sexe, couleur_chev, type_chev) :
 
     filtered_df = filtrage_dataset(df_merged, requirem)
     print("Taille filtered_df :", len(filtered_df))
-    
 
     #nombre images : 
     nombre = min(max_images, len(filtered_df)) #on ne peut pas afficher plus que le 6 images et le nb d'images disponibles qui correspondent aux caractéritiques choisies par l'utilisateur
@@ -38,7 +49,6 @@ def selection_images(sexe, couleur_chev, type_chev) :
         images = [None] * max_images
         chemins = [None] * max_images
         blocs = [gr.update(visible=False) for _ in range(max_images)]
-
         return (*images, *chemins, *blocs, gr.update(visible=True), gr.update(visible=False),"Aucune image proposée")
     
     #Tirage aléatoire des images : 
@@ -51,7 +61,6 @@ def selection_images(sexe, couleur_chev, type_chev) :
     for img in liste_images : 
         chemin = f'dataset/img_align_celeba/{img}'
         print("Chemin généré :", chemin)    
-        
         image = Image.open(chemin).copy()
         images.append(image)
         chemins.append(chemin)
@@ -61,14 +70,12 @@ def selection_images(sexe, couleur_chev, type_chev) :
     while len(images) < max_images : 
         images.append(None)
         chemins.append(None)
-    
     blocs = []
     for i in range(max_images):
         if i < nombre : 
             blocs.append(gr.update(visible=True))
         else : 
             blocs.append(gr.update(visible = False))        
-    
     return (*images, *chemins, *blocs, gr.update(visible=False), gr.update(visible=True), f"{nombre} image proposées" ) #cache le questionnaire (2e output) et affiche les images selectionnées (3e output)
 
 
@@ -79,9 +86,12 @@ def selection_images(sexe, couleur_chev, type_chev) :
 
 def recuperer_selection(path1, path2, path3, path4, path5, path6, check1, check2, check3, check4, check5, check6):
     '''
-    Cette fonction est appelée lorsque l'utilisateur clique sur 'Continuer vers les actions'
-    Elle lit les 6 chemins potentiels des images et les 6 checkboxes, elle récupère ensuite uniquement les chemins des images cochées. 
-        
+    Cette fonction lit les 6 chemins potentiels des images et les 6 checkboxes, elle récupère ensuite uniquement les chemins des images cochées.
+    Paramètres :
+        path1, path2, path3, path4, path5, path6 (str) : chemins des images affichées dans les 6 blocs d'affichage
+        check1, check2, check3, check4, check5, check6 (bool) : valeurs des checkboxes associées à chaque image (True si cochée, False sinon)
+    Retour :
+        selection (list[str]) : liste des chemins des images sélectionnées par l'utilisateur (c   
     '''
     selection = []
     if check1 and path1 is not None :
@@ -108,7 +118,13 @@ def recuperer_selection(path1, path2, path3, path4, path5, path6, check1, check2
 
 def verif_selection(selection, action):
     '''
-    Vérifie que le nombre d'images sélectionnées correspond à l'action
+    Cette fonction vérifie que le nombre d'images sélectionnées par l'utilisateur correspond bien à l'action qu'il souhaite réaliser (reconstruction, interpolation, fusion).
+    Paramètres :
+        selection (list[str]) : liste des chemins des images sélectionnées par l'utilisateur
+        action (str) : l'action que l'utilisateur souhaite réaliser
+    Retour :
+        valid (bool) : True si la sélection est valide pour l'action, False sinon
+        message (str) : message d'erreur si la sélection n'est pas valide, ou message de confirmation si la sélection est valide
     '''
     n = len(selection)
 
@@ -116,9 +132,11 @@ def verif_selection(selection, action):
         if n != 1:
             return False, 'Pour la reconstruction, sélectionnez exactement 1 image'
     elif action == 'interpolation':
-        if n != 1 : 
-            return False, 'Pour la reconstruction, sélectionnez exactement 2 images'
-
+        if n != 2 :
+            return False, 'Pour une interpolation, sélectionnez exactement 2 images'
+    elif action == 'fusion':
+        if n != 3 :
+            return False, 'Pour une fusion, sélectionnez exactement 3 images'
     return True, ''
 
 # ---------------------------------------------------------------------------------------
@@ -129,8 +147,17 @@ dico_direction = load_directions("dataset/directions_latentes.npy")
 
 def appliquer_modifications(image_base, couleur_chev_q2, type_chev_q2, pilosite_q2, visage_q2, accessoires_q2):
     '''
-    Applique réellement les modifications demandées à l'image de base
-    en utilisant les directions latentes du VAE.
+    Cette fonction applique les modifications demandées par l'utilisateur dans le questionnaire 2 à l'image sélectionnée, en utilisant les directions latentes calculées à partir du dataset CelebA.
+    Paramètres :
+        image_base (PIL.Image) : l'image sélectionnée par l'utilisateur à modifier
+        couleur_chev_q2 (str) : choix de couleur de cheveux (ex: "Blond", "Brun", "Noir", "Rouge", "Aucun changement")
+        type_chev_q2 (str) : choix de type de cheveux (ex: "Lisse", "Bouclés", "Ondulés", "Aucun changement")
+        pilosite_q2 (list[str]) : liste des choix de pilosité (ex: ["Barbe", "Moustache"]) 
+        visage_q2 (list[str]) : liste des choix de traits du visage (ex: ["Joues rosées", "Nez pointu"]) 
+        accessoires_q2 (list[str]) : liste des choix d'accessoires (ex: ["Lunettes", "Maquillage prononcé"]) 
+    Retour :
+        image_modifiee (PIL.Image) : l'image modifiée selon les choix de l'utilisateur
+        message (str) : message indiquant les modifications appliquées ou une erreur si aucune modification n'a été demandée
     '''
     if image_base is None:
         return None, "Erreur : aucune image à modifier."
@@ -155,8 +182,6 @@ def appliquer_modifications(image_base, couleur_chev_q2, type_chev_q2, pilosite_
 
     return image_modifiee, message
 
-
-
 # ---------------------------------------------------------------------------------------
 # Fonction qui permet de retourner au questionnaire si besoin
 # ---------------------------------------------------------------------------------------
@@ -167,7 +192,6 @@ def retour_selection():
     aux cases cochées ni aux images déjà affichées
     """
     return gr.update(visible=True), gr.update(visible=False)
-
 
 def retour_questionnaire():
     """

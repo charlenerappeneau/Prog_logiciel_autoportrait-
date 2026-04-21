@@ -1,5 +1,6 @@
-import pandas as pd
+#Ce script est conçu pour calculer les vecteurs latents associés à chaque image du dataset CelebA
 
+import pandas as pd
 from source.latent_space import compute_latent_vectors
 from source.prepa_dataset import load_attributes
 

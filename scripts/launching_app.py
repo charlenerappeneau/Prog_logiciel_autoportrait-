@@ -1,7 +1,13 @@
+# Ce script lance l'application Gradio pour la génération de portraits robots à partir du dataset CelebA.
+# Il utilise les fonctions définies dans source/app.py pour gérer les différentes étapes de l'application
+# notamment la sélection d'images, la reconstruction, l'interpolation, la fusion et l'application de modifications basées sur les directions latentes calculées précédemment
+# L'interface guide l utilisateur à travers un questionnaire initial, la sélection d'images, et un second questionnaire pour affiner les modifications souhaitées sur le portrait généré
+
 import gradio as gr
 from PIL import Image
+from torch import le
 from source.app import selection_images, retour_selection, retour_questionnaire, appliquer_modifications
-from source.latent_space import reconstruct_image, interpolate_images
+from source.latent_space import reconstruct_image, interpolate_images, fusion_images
 
 
 #======================================================================
@@ -9,17 +15,23 @@ from source.latent_space import reconstruct_image, interpolate_images
 #======================================================================
 
 with gr.Blocks() as demo:
-
-    gr.Markdown("# Portrait Robot Generator")
-    gr.Markdown("Projet VAE basé sur CelebA")
+    gr.Markdown("# <span style='color: purple; font-size: 2em;'>Robot Portrait Generator</span>")
+    gr.Markdown("Bienvenue dans le générateur de robot portrait ! Suivez les étapes pour créer votre portrait robot personnalisé à partir du dataset CelebA. " \
+    "Commencez par répondre au questionnaire pour décrire les caractéristiques générales du visage que vous souhaitez générer, puis sélectionnez une ou plusieurs " \
+    "images proposées en fonction de vos réponses pour la reconstruction, l'interpolation ou la fusion. Enfin, affinez votre portrait robot en choisissant les modifications " \
+    "que vous souhaitez apporter dans le second questionnaire.")
 
     #------------------------------------------------------------------------------------------------------------
-    #  Etape 1 questionnaire - seules les caractéristiques principales sont mises en avant (pas les 40 attributs)
+    #  Etape 1  : questionnaire 1 : seules les caractéristiques principales sont mises en avant 
+    #  cette étape contient le premier questionnaire qui permet à l'utilisateur de décrire les caractéristiques générales du visage qu'il souhaite générer (sexe, couleur et type de cheveux). 
+    #  En fonction des réponses, des propositions d'images seront affichées dans la colonne suivante pour que l'utilisateur puisse sélectionner une ou plusieurs images 
+    #  comme point de départ pour la reconstruction ou l'interpolation.
     #------------------------------------------------------------------------------------------------------------ 
-
+    
     with gr.Column(visible=True) as questionnaire:
-        gr.Markdown("## Questionnaire 1")
-        gr.Markdown("Décrivez les caractéristiques générales du visage")
+    
+        gr.Markdown("## <span style='color: blue; font-size: 1.5em;'>Questionnaire 1</span>")
+        gr.Markdown("Décrivez les caractéristiques générales du visage") 
 
         # Sexe
         gr.Markdown("### Sexe")
@@ -30,13 +42,15 @@ with gr.Blocks() as demo:
         couleur_chev = gr.Dropdown(['Blond','Brun','Noir','Gris','Chauve', 'Non précisé'], label="Couleur des cheveux")
         type_chev = gr.Dropdown(['Raides','Ondulés', 'Non précisé'], label="Type de cheveux")
         
-        button1 = gr.Button('Voir les propositions ')
+        button1 = gr.Button('Voir les propositions ') # ce bouton permet de passer à l'étape suivante : la sélection d'images proposées en fonction des réponses au questionnaire 1 (sexe, couleur et type de cheveux)
 
-
-    #----------------------------------------------------------------
+    #--------------------------------------------------------------------------------------------------------------------------------
     # Etape 2 : Slection d'images initiales
-    #---------------------------------------------------------------- 
+    # cette étape affiche les propositions d'images en fonction des réponses au questionnaire 1
+    # et permet à l'utilisateur de sélectionner une ou plusieurs images pour la reconstruction, l'interpolation ou la fusion
+    #--------------------------------------------------------------------------------------------------------------------------------
     with gr.Column(visible=False) as images_select:
+        
         gr.Markdown("## Sélectionnez une ou plusieurs images")
         
         info = gr.Textbox(label="Informations", interactive=False)
@@ -44,15 +58,20 @@ with gr.Blocks() as demo:
                     - **Reconstruction** : sélectionnez exactement **1 image**
                     - **Interpolation** : sélectionnez exactement **2 images** """)
 
-        #----------------------------
-        # States qui stockent les chemins
-        #----------------------------
+        #--------------------------------------------------------------------------------------------
+        # States qui stockent les chemins : 
+        # les states permettent de stocker les chemins des images sélectionnées pour les utiliser 
+        # dans les fonctions de reconstruction, d'interpolation et de fusion
+        #--------------------------------------------------------------------------------------------
         path1 = gr.State()
         path2 = gr.State()
         path3 = gr.State()
         path4 = gr.State()
         path5 = gr.State()
         path6 = gr.State()
+
+    # Les gr.Row permettent d'organiser les éléments de l'interface en lignes, ici on a deux lignes de trois images chacune pour afficher les propositions d'images à sélectionner par l'utilisateur
+    # Chaque image est accompagnée d'une checkbox pour permettre la sélection        
 
         with gr.Row():
             with gr.Column(visible=False) as bloc1:
@@ -77,22 +96,26 @@ with gr.Blocks() as demo:
                 img5 = gr.Image(type="pil", label="Image 5")
                 check5 = gr.Checkbox(label="Sélectionner cette image")
 
-
             with gr.Column(visible=False) as bloc6:
                 img6 = gr.Image(type="pil", label="Image 6")
                 check6 = gr.Checkbox(label="Sélectionner cette image") 
 
-    
+
         with gr.Row():
             reconstruction_button = gr.Button("Reconstruction")
             interpolation_button = gr.Button("Interpolation")
+            fusion_button = gr.Button("Fusion")
 
-        button_retour_quest = gr.Button("Retour au questionnaire")
-
+        button_retour_quest = gr.Button("Retour au questionnaire") ## ce bouton permet à l'utilisateur de revenir au questionnaire 1 pour modifier ses réponses (sexe, couleur et type de cheveux) 
+        
+            
     
     #----------------------------------------------------------------
     # Etape 3 : Resultats
+    # zone de résultats qui s'affiche après que l'utilisateur ait sélectionné 
+    # les images et choisi une action (reconstruction ou interpolation ou fusion)
     #---------------------------------------------------------------- 
+
     with gr.Column(visible=False) as result_zone:
         gr.Markdown("## Résultat")
 
@@ -103,11 +126,26 @@ with gr.Blocks() as demo:
         button_retour_selection = gr.Button("Retour à la selection")
 
     
-    
     #--------------------------------
     # Fonctions de traitement Gradio
     #--------------------------------
+    # le code ci-dessous fait le lien entre les éléments de l'interface et les fonctions de traitement définies dans source/app.py et source/latent_space.py
+    # notamment la fonction selection_images qui propose des images en fonction des réponses au questionnaire 1, la fonction recuperer_selection qui récupère les images sélectionnées par l'utilisateur, et les fonctions eval_reconstruction et eval_interpolation 
+    # qui vérifient que le nombre d'images sélectionnées correspond à l'action choisie par l'utilisateur (reconstruction/ interpolation/fusion) et qui appellent ensuite les fonctions de reconstruction et d'interpolation définies dans source/latent_space.py pour
+    # générer le portrait robot final à partir des images sélectionnées
+    
     def eval_reconstruction(i1, i2, i3, i4, i5, i6, c1, c2, c3, c4, c5, c6):
+        '''
+        Cette fonction est appelée lorsque l'utilisateur clique sur le bouton "Reconstruction"
+        elle récupère les images sélectionnées par l'utilisateur et vérifie que le nombre d'images sélectionnées est bien égal à 1, sinon elle affiche un message d'erreur
+        si une seule image est sélectionnée, elle appelle la fonction reconstruct_image de source/latent_space.py pour générer le portrait robot à partir de l'image sélectionnée, elle affiche ensuite le résultat et un message de succès
+        et elle cache la zone de sélection d'images pour afficher uniquement le résultat et le questionnaire 2
+        
+        Paramètres : les 6 chemins potentiels des images et les 6 checkboxes associés
+        Retour : l'image résultat de la reconstruction, un message de succès ou d'erreur, la visibilité de la zone de résultat, la visibilité de la zone de sélection d'images et la visibilité du questionnaire 2
+        
+        '''
+
         images = [i1, i2, i3, i4, i5, i6]
         checks = [c1, c2, c3, c4, c5, c6]
         selection = [img for img, c in zip(images, checks) if c and img is not None]
@@ -121,6 +159,18 @@ with gr.Blocks() as demo:
         return res_img, "Reconstruction réussie !", gr.update(visible=True), gr.update(visible=False), gr.update(visible=True)
 
     def eval_interpolation(i1, i2, i3, i4, i5, i6, c1, c2, c3, c4, c5, c6):
+
+        '''
+        Cette fonction est appelée lorsque l'utilisateur clique sur le bouton "Interpolation"
+        elle récupère les images sélectionnées par l'utilisateur et vérifie que le nombre d'images sélectionnées est bien égal à 2, sinon elle affiche un message d'erreur
+        si deux images sont sélectionnées, elle appelle la fonction interpolate_images de source/latent_space.py pour générer le portrait robot à partir des images sélectionnées, elle affiche ensuite le résultat et un message de succès
+        et elle cache la zone de sélection d'images pour afficher uniquement le résultat et le questionnaire 2
+        
+        Paramètres : les 6 chemins potentiels des images et les 6 checkboxes associés
+        Retour : l'image résultat de l'interpolation, un message de succès ou d'erreur, la visibilité de la zone de résultat, la visibilité de la zone de sélection d'images et la visibilité du questionnaire 2
+        
+        '''
+
         images = [i1, i2, i3, i4, i5, i6]
         checks = [c1, c2, c3, c4, c5, c6]
         selection = [img for img, c in zip(images, checks) if c and img is not None]
@@ -131,15 +181,38 @@ with gr.Blocks() as demo:
         res_img = interpolate_images(selection[0], selection[1])
         return res_img, "Interpolation réussie !", gr.update(visible=True), gr.update(visible=False), gr.update(visible=True)
 
+    
+    def eval_fusion(i1, i2, i3, i4, i5, i6, c1, c2, c3, c4, c5, c6):
+        '''
+        Cette fonction est appelée lorsque l'utilisateur clique sur le bouton "Fusion"
+        elle récupère les images sélectionnées par l'utilisateur et vérifie que le nombre d'images sélectionnées est bien égal à 3, sinon elle affiche un message d'erreur
+        si trois images sont sélectionnées, elle appelle la fonction de fusion (à définir) pour générer le portrait robot à partir des images sélectionnées, elle affiche ensuite le résultat et un message de succès
+        et elle cache la zone de sélection d'images pour afficher uniquement le résultat et le questionnaire 2
+        
+        Paramètres : les 6 chemins potentiels des images et les 6 checkboxes associés
+        Retour : l'image résultat de la fusion, un message de succès ou d'erreur, la visibilité de la zone de résultat, la visibilité de la zone de sélection d'images et la visibilité du questionnaire 2
+        
+        '''
 
-
+        images = [i1, i2, i3, i4, i5, i6]
+        checks = [c1, c2, c3, c4, c5, c6]
+        selection = [img for img, c in zip(images, checks) if c and img is not None]
+        
+        if len(selection) != 3:
+            return None, "Erreur : Veuillez sélectionner exactement 3 images pour la fusion.", gr.update(visible=True), gr.update(visible=False), gr.update(visible=False)
+            
+        res_img = fusion_images(selection[0], selection[1], selection[2]) 
+        return res_img, "Fusion réussie !", gr.update(visible=True), gr.update(visible=False), gr.update(visible=True)
+    
     #----------------------------------------------------------------
     # Etape 4 : Questionnaire 2 
     # (propositions de changements : ajout/suppression caractéristiques)
     #----------------------------------------------------------------
     with gr.Column(visible=False) as questionnaire2:
-        gr.Markdown("## Questionnaire 2")
-        gr.Markdown("Choisissez les changements que vous souhaitez apporter au portrait généré")
+
+        gr.Markdown("## <span style='color: blue; font-size: 1.5em;'>Questionnaire 2</span>")
+        gr.Markdown("Pas satisfait du résultat ? Vous pouvez à présent affiner votre portrait robot en choisissant les modifications que vous souhaitez apporter. " \
+        "Veuillez sélectionner les caractéristiques que vous souhaitez modifier.") 
 
         gr.Markdown("### Cheveux")
         couleur_chev_q2 = gr.Dropdown(['Aucun changement', 'Blond', 'Brun', 'Noir', 'Gris', 'Chauve'], label="Changer la couleur des cheveux")
@@ -156,30 +229,18 @@ with gr.Blocks() as demo:
     
         appliquer_modifs_button = gr.Button("Appliquer les modifications")
 
-
-
     #--------------------------------
     # Boutons 
     #-------------------------------- 
     
-    #Affiche propositions
-    button1.click(selection_images, inputs=[sexe, couleur_chev, type_chev], outputs=[img1, img2, img3, img4, img5, img6, path1, path2, path3, path4, path5, path6, bloc1, bloc2, bloc3, bloc4, bloc5, bloc6, questionnaire, images_select, info]) #gradio appelle la fonction selection_images qui aura en entrée l'input
-    
-    
-    button_retour_quest.click(retour_questionnaire, inputs=[], outputs=[questionnaire, images_select])
-    button_retour_selection.click(retour_selection, inputs = [], outputs = [images_select, result_zone])
-    
-    # Boutons d'action
-    all_imgs_and_checks = [img1, img2, img3, img4, img5, img6, check1, check2, check3, check4, check5, check6]
-    
-    reconstruction_button.click(eval_reconstruction, inputs=all_imgs_and_checks, outputs=[result_image, result_text, result_zone, images_select, questionnaire2])
-    interpolation_button.click(eval_interpolation, inputs=all_imgs_and_checks, outputs=[result_image, result_text, result_zone, images_select, questionnaire2])
-    
-    appliquer_modifs_button.click(appliquer_modifications, inputs=[result_image, couleur_chev_q2, type_chev_q2, pilosite_q2, visage_q2, accessoires_q2], outputs=[result_image, result_text])
-    
+    button1.click(selection_images, inputs=[sexe, couleur_chev, type_chev], outputs=[img1, img2, img3, img4, img5, img6, path1, path2, path3, path4, path5, path6, bloc1, bloc2, bloc3, bloc4, bloc5, bloc6, questionnaire, images_select, info]) #bouton qui affiche les propositions d'images en fonction des réponses au questionnaire 1, il rend visible la zone de sélection d'images et cache le questionnaire 1
+    button_retour_quest.click(retour_questionnaire, inputs=[], outputs=[questionnaire, images_select]) #bouton qui permet de revenir au questionnaire 1, il rend visible le questionnaire 1 et cache la zone de sélection d'images
+    button_retour_selection.click(retour_selection, inputs = [], outputs = [images_select, result_zone]) #bouton qui permet de revenir à la sélection d'images après avoir vu le résultat, il rend visible la zone de sélection d'images et cache la zone de résultat et le questionnaire 2
+    all_imgs_and_checks = [img1, img2, img3, img4, img5, img6, check1, check2, check3, check4, check5, check6] #bouton qui permet de récupérer les images sélectionnées et les checkboxes associés pour les fonctions de reconstruction et d'interpolation
+    reconstruction_button.click(eval_reconstruction, inputs=all_imgs_and_checks, outputs=[result_image, result_text, result_zone, images_select, questionnaire2]) #bouton qui permet de lancer la fonction de reconstruction, il vérifie que le nombre d'images sélectionnées est bien égal à 1, sinon il affiche un message d'erreur, si une seule image est sélectionnée, il affiche le résultat de la reconstruction et le questionnaire 2 pour les modifications basées sur les directions latentes
+    interpolation_button.click(eval_interpolation, inputs=all_imgs_and_checks, outputs=[result_image, result_text, result_zone, images_select, questionnaire2]) #bouton qui permet de lancer la fonction d'interpolation, il vérifie que le nombre d'images sélectionnées est bien égal à 2, sinon il affiche un message d'erreur, si deux images sont sélectionnées, il affiche le résultat de l'interpolation et le questionnaire 2 pour les modifications basées sur les directions latentes
+    fusion_button.click(eval_fusion, inputs=all_imgs_and_checks, outputs=[result_image, result_text, result_zone, images_select, questionnaire2]) #bouton qui permet de lancer la fonction de fusion, il vérifie que le nombre d'images sélectionnées est bien égal à 3, sinon il affiche un message d'erreur, si trois images sont sélectionnées, il affiche le résultat de la fusion et le questionnaire 2 pour les modifications basées sur les directions latentes
+    appliquer_modifs_button.click(appliquer_modifications, inputs=[result_image, couleur_chev_q2, type_chev_q2, pilosite_q2, visage_q2, accessoires_q2], outputs=[result_image, result_text]) #bouton qui permet d'appliquer les modifications choisies dans le questionnaire 2, il utilise les directions latentes calculées précédemment pour modifier le portrait généré en fonction des changements demandés par l'utilisateur, il affiche ensuite le résultat modifié et un message de succès
 
 demo.queue().launch()
-
-
-
 

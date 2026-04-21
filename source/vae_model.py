@@ -1,3 +1,5 @@
+
+#a supprimer
 import numpy as np
 import os
 import matplotlib.pyplot as plt
@@ -111,3 +113,5 @@ for x, _ in x_test.take(1):
         plt.axis("off")
 
         plt.show()
+
+

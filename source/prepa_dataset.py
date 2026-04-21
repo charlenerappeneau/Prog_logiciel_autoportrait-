@@ -163,7 +163,6 @@ def filtrage_dataset(df_celebA, requirements) :
     return filtered_df
 
 
-
 #-----------------------------------------------
 # Tests de fonctions : 
 #-----------------------------------------------

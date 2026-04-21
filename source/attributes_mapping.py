@@ -3,8 +3,6 @@ Ce fichier centralise toutes les correspondances entre :
 - les termes affichés à l'utilisateur dans l'interface
 - les noms d'attributs du dataset CelebA
 '''
-
-
 #-------------------------------------------------------------------------------------
     # Correspondance entre les choix dans le questionnaire et attributs du dataset 
 #-------------------------------------------------------------------------------------
