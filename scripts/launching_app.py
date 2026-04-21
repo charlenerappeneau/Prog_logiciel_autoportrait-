@@ -13,9 +13,11 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 import gradio as gr
 from PIL import Image
 from torch import le
-from source.app import selection_images, retour_selection, retour_questionnaire, appliquer_modifications
-from source.latent_space import reconstruct_image, fusion_2_images, fusion_3_images
+from source.app import selection_images, retour_selection, retour_questionnaire, appliquer_modifications, refine_with_genetic_algorithm
+from source.latent_space import reconstruct_image, fusion_2_images, fusion_3_images, load_directions
 
+dico_direction = load_directions()
+refinable_attributes = ["Aucun changement"] + sorted(list(dico_direction.keys()))
 
 #======================================================================
 # INTERFACE
@@ -110,8 +112,8 @@ with gr.Blocks() as demo:
 
         with gr.Row():
             reconstruction_button = gr.Button("Reconstruction")
-            interpolation_button = gr.Button("Interpolation")
-            fusion_button = gr.Button("Fusion")
+            fusion2_button = gr.Button("Fusion 2 images")
+            fusion3_button = gr.Button("Fusion 3 images")
 
         button_retour_quest = gr.Button("Retour au questionnaire") ## ce bouton permet à l'utilisateur de revenir au questionnaire 1 pour modifier ses réponses (sexe, couleur et type de cheveux) 
         
@@ -165,16 +167,16 @@ with gr.Blocks() as demo:
         # Cache la sélection, affiche le résultat
         return res_img, "Reconstruction réussie !", gr.update(visible=True), gr.update(visible=False), gr.update(visible=True)
 
-    def eval_interpolation(i1, i2, i3, i4, i5, i6, c1, c2, c3, c4, c5, c6):
+    def eval_fusion2(i1, i2, i3, i4, i5, i6, c1, c2, c3, c4, c5, c6):
 
         '''
-        Cette fonction est appelée lorsque l'utilisateur clique sur le bouton "Interpolation"
+        Cette fonction est appelée lorsque l'utilisateur clique sur le bouton "Fusion 2 images"
         elle récupère les images sélectionnées par l'utilisateur et vérifie que le nombre d'images sélectionnées est bien égal à 2, sinon elle affiche un message d'erreur
-        si deux images sont sélectionnées, elle appelle la fonction interpolate_images de source/latent_space.py pour générer le portrait robot à partir des images sélectionnées, elle affiche ensuite le résultat et un message de succès
+        si deux images sont sélectionnées, elle appelle la fonction fusion_2_images de source/latent_space.py pour générer le portrait robot à partir des images sélectionnées, elle affiche ensuite le résultat et un message de succès
         et elle cache la zone de sélection d'images pour afficher uniquement le résultat et le questionnaire 2
         
         Paramètres : les 6 chemins potentiels des images et les 6 checkboxes associés
-        Retour : l'image résultat de l'interpolation, un message de succès ou d'erreur, la visibilité de la zone de résultat, la visibilité de la zone de sélection d'images et la visibilité du questionnaire 2
+        Retour : l'image résultat de la fusion, un message de succès ou d'erreur, la visibilité de la zone de résultat, la visibilité de la zone de sélection d'images et la visibilité du questionnaire 2
         
         '''
 
@@ -183,15 +185,15 @@ with gr.Blocks() as demo:
         selection = [img for img, c in zip(images, checks) if c and img is not None]
         
         if len(selection) != 2:
-            return None, "Erreur : Veuillez sélectionner exactement 2 images pour l'interpolation.", gr.update(visible=True), gr.update(visible=False), gr.update(visible=False)
+            return None, "Erreur : Veuillez sélectionner exactement 2 images pour la fusion.", gr.update(visible=True), gr.update(visible=False), gr.update(visible=False)
             
         res_img = fusion_2_images(selection[0], selection[1])
-        return res_img, "Interpolation réussie !", gr.update(visible=True), gr.update(visible=False), gr.update(visible=True)
+        return res_img, "Fusion réussie !", gr.update(visible=True), gr.update(visible=False), gr.update(visible=True)
 
     
-    def eval_fusion(i1, i2, i3, i4, i5, i6, c1, c2, c3, c4, c5, c6):
+    def eval_fusion3(i1, i2, i3, i4, i5, i6, c1, c2, c3, c4, c5, c6):
         '''
-        Cette fonction est appelée lorsque l'utilisateur clique sur le bouton "Fusion"
+        Cette fonction est appelée lorsque l'utilisateur clique sur le bouton "Fusion 3 images"
         elle récupère les images sélectionnées par l'utilisateur et vérifie que le nombre d'images sélectionnées est bien égal à 3, sinon elle affiche un message d'erreur
         si trois images sont sélectionnées, elle appelle la fonction de fusion (à définir) pour générer le portrait robot à partir des images sélectionnées, elle affiche ensuite le résultat et un message de succès
         et elle cache la zone de sélection d'images pour afficher uniquement le résultat et le questionnaire 2
@@ -216,26 +218,32 @@ with gr.Blocks() as demo:
     # (propositions de changements : ajout/suppression caractéristiques)
     #----------------------------------------------------------------
     with gr.Column(visible=False) as questionnaire2:
+        gr.Markdown("## <span style='color: blue; font-size: 1.5em;'>Questionnaire 2 : Ajustements</span>")
+        
+        with gr.Tabs():
+            with gr.TabItem("Ajustement Standard"):
+                gr.Markdown("Modifiez le portrait en ajoutant ou changeant des caractéristiques.")
+                couleur_chev_q2 = gr.Dropdown(['Aucun changement', 'Blond', 'Brun', 'Noir', 'Gris', 'Chauve'], label="Changer la couleur des cheveux")
+                type_chev_q2 = gr.Dropdown(['Aucun changement', 'Raides', 'Ondulés'], label="Changer le type de cheveux")
+                pilosite_q2 = gr.CheckboxGroup(["Barbe", "Moustache", "Bouc", "Frange", "Sideburns", "Calvitie frontale"], label="Modifications de pilosité")
+                visage_q2 = gr.CheckboxGroup(["Joues rosées", "Nez pointu", "Peau pâle", "Visage ovale", "Yeux étroits", "Pommettes hautes", "Double menton","Sourcils épais", "Gros nez", "Lèvres pulpeuses", "Cernes"], label="Forme et traits du visage")
+                accessoires_q2 = gr.CheckboxGroup(["Lunettes", "Maquillage prononcé", "Boucles d'oreilles", "Chapeau", "Rouge à lèvres", "Collier", "Cravate"], label="Modifications d'accessoires")
+                appliquer_modifs_button = gr.Button("Appliquer les modifications")
 
-        gr.Markdown("## <span style='color: blue; font-size: 1.5em;'>Questionnaire 2</span>")
-        gr.Markdown("Pas satisfait du résultat ? Vous pouvez à présent affiner votre portrait robot en choisissant les modifications que vous souhaitez apporter. " \
-        "Veuillez sélectionner les caractéristiques que vous souhaitez modifier.") 
+            with gr.TabItem("Affinage par Algorithme Génétique (Expérimental)"):
+                gr.Markdown("Sélectionnez un attribut et ajustez les paramètres pour optimiser le portrait.")
+                
+                attribute_to_refine_dropdown = gr.Dropdown(
+                    refinable_attributes, value="Aucun changement", label="Attribut à affiner"
+                )
+                
+                with gr.Accordion("Paramètres de l'Algorithme Génétique", open=False):
+                    ga_gens = gr.Slider(2, 30, value=10, step=1, label="Générations")
+                    ga_pop_size = gr.Slider(5, 30, value=10, step=2, label="Taille de la Population")
+                    ga_mut_rate = gr.Slider(0.0001, 0., value=0.03, label="Taux de Mutation")
+                    ga_cross_rate = gr.Slider(0.1, 1.0, value=0.8, label="Taux de Crossover")
 
-        gr.Markdown("### Cheveux")
-        couleur_chev_q2 = gr.Dropdown(['Aucun changement', 'Blond', 'Brun', 'Noir', 'Gris', 'Chauve'], label="Changer la couleur des cheveux")
-        type_chev_q2 = gr.Dropdown(['Aucun changement', 'Raides', 'Ondulés'], label="Changer le type de cheveux")
-
-        gr.Markdown("### Pilosité")
-        pilosite_q2 = gr.CheckboxGroup(["Barbe", "Moustache", "Bouc", "Frange", "Sideburns", "Calvitie frontale"], label="Modifications de pilosité")
-
-        gr.Markdown("### Forme et traits du visage")
-        visage_q2 = gr.CheckboxGroup(["Joues rosées", "Nez pointu", "Peau pâle", "Visage ovale", "Yeux étroits", "Pommettes hautes", "Double menton","Sourcils épais", "Gros nez", "Lèvres pulpeuses", "Cernes"], label="Modifications du visage")
-
-        gr.Markdown("### Accessoires")
-        accessoires_q2 = gr.CheckboxGroup(["Lunettes", "Maquillage prononcé", "Boucles d'oreilles", "Chapeau", "Rouge à lèvres", "Collier", "Cravate"], label="Modifications d'accessoires")
-    
-        appliquer_modifs_button = gr.Button("Appliquer les modifications")
-
+                refine_button = gr.Button("Affiner avec l'Algorithme Génétique", variant="primary")
     #--------------------------------
     # Boutons 
     #-------------------------------- 
@@ -245,13 +253,18 @@ with gr.Blocks() as demo:
     button_retour_selection.click(retour_selection, inputs = [], outputs = [images_select, result_zone]) #bouton qui permet de revenir à la sélection d'images après avoir vu le résultat, il rend visible la zone de sélection d'images et cache la zone de résultat et le questionnaire 2
     all_imgs_and_checks = [img1, img2, img3, img4, img5, img6, check1, check2, check3, check4, check5, check6] #bouton qui permet de récupérer les images sélectionnées et les checkboxes associés pour les fonctions de reconstruction et d'interpolation
     reconstruction_button.click(eval_reconstruction, inputs=all_imgs_and_checks, outputs=[result_image, result_text, result_zone, images_select, questionnaire2]) #bouton qui permet de lancer la fonction de reconstruction, il vérifie que le nombre d'images sélectionnées est bien égal à 1, sinon il affiche un message d'erreur, si une seule image est sélectionnée, il affiche le résultat de la reconstruction et le questionnaire 2 pour les modifications basées sur les directions latentes
-    interpolation_button.click(eval_interpolation, inputs=all_imgs_and_checks, outputs=[result_image, result_text, result_zone, images_select, questionnaire2]) #bouton qui permet de lancer la fonction d'interpolation, il vérifie que le nombre d'images sélectionnées est bien égal à 2, sinon il affiche un message d'erreur, si deux images sont sélectionnées, il affiche le résultat de l'interpolation et le questionnaire 2 pour les modifications basées sur les directions latentes
-    fusion_button.click(eval_fusion, inputs=all_imgs_and_checks, outputs=[result_image, result_text, result_zone, images_select, questionnaire2]) #bouton qui permet de lancer la fonction de fusion, il vérifie que le nombre d'images sélectionnées est bien égal à 3, sinon il affiche un message d'erreur, si trois images sont sélectionnées, il affiche le résultat de la fusion et le questionnaire 2 pour les modifications basées sur les directions latentes
+    fusion2_button.click(eval_fusion2, inputs=all_imgs_and_checks, outputs=[result_image, result_text, result_zone, images_select, questionnaire2]) #bouton qui permet de lancer la fonction d'interpolation, il vérifie que le nombre d'images sélectionnées est bien égal à 2, sinon il affiche un message d'erreur, si deux images sont sélectionnées, il affiche le résultat de l'interpolation et le questionnaire 2 pour les modifications basées sur les directions latentes
+    fusion3_button.click(eval_fusion3, inputs=all_imgs_and_checks, outputs=[result_image, result_text, result_zone, images_select, questionnaire2]) #bouton qui permet de lancer la fonction de fusion, il vérifie que le nombre d'images sélectionnées est bien égal à 3, sinon il affiche un message d'erreur, si trois images sont sélectionnées, il affiche le résultat de la fusion et le questionnaire 2 pour les modifications basées sur les directions latentes
     appliquer_modifs_button.click(appliquer_modifications, inputs=[result_image, couleur_chev_q2, type_chev_q2, pilosite_q2, visage_q2, accessoires_q2], outputs=[result_image, result_text]) #bouton qui permet d'appliquer les modifications choisies dans le questionnaire 2, il utilise les directions latentes calculées précédemment pour modifier le portrait généré en fonction des changements demandés par l'utilisateur, il affiche ensuite le résultat modifié et un message de succès
+    refine_button.click(
+        fn=refine_with_genetic_algorithm,
+        inputs=[result_image, attribute_to_refine_dropdown, ga_gens, ga_pop_size, ga_mut_rate, ga_cross_rate],
+        outputs=[result_image, result_text]
+    )
 
 
 def main(): #sert à lancer l'application Gradio, elle est appelée à la fin du script pour démarrer l'interface et rendre le serveur accessible à l'adresse http://localhost:7860 depuis un autre appareil
-    demo.queue().launch(server_name="0.0.0.0", server_port=7860) # le serveur est accessible à l'adresse http://localhost:7860  depuis un autre appareil
+    demo.queue().launch(server_name="127.0.0.1", server_port=7860) # le serveur est accessible à l'adresse http://localhost:7860  depuis un autre appareil
 
 if __name__ == "__main__": #sert a vérifier que le script est exécuté directement et non importé en tant que module, si c'est le cas, il appelle la fonction main() pour lancer l'application Gradio
     main()

@@ -3,6 +3,9 @@ from PIL import Image
 from source.prepa_dataset import *
 from source.latent_space import load_directions, build_modifications, modify_image_attributes
 import os
+import numpy as np
+from source.genetic_algorithm import GeneticAlgorithm
+from source.latent_space import encode, decode
 
 max_images = 6 
 
@@ -181,6 +184,62 @@ def appliquer_modifications(image_base, couleur_chev_q2, type_chev_q2, pilosite_
     message = "\n".join(resume)
 
     return image_modifiee, message
+
+def create_fitness_function(attribute_name, dico_direction):
+    """
+    Factory to create a fitness function for the selected attribute.
+    """
+    if attribute_name not in dico_direction:
+        raise ValueError(f"Attribute '{attribute_name}' not found.")
+    
+    selected_direction = dico_direction[attribute_name]
+    direction_norm = selected_direction / np.linalg.norm(selected_direction)
+
+    def fitness_function(latent_vector):
+        latent_vector_norm = latent_vector / np.linalg.norm(latent_vector)
+        return np.dot(latent_vector_norm, direction_norm)
+        
+    return fitness_function
+
+def refine_with_genetic_algorithm(base_image, attribute_to_refine, generations, population_size, mutation_rate, crossover_rate):
+    """
+    Takes a base image, and uses a GA to refine it towards a specific attribute.
+    """
+    if base_image is None:
+        return None, "Error: No base image to refine."
+    if attribute_to_refine == "Aucun changement":
+        return base_image, "Please select an attribute to refine."
+
+    print(f"Starting GA refinement for attribute: {attribute_to_refine}...")
+
+    dico_direction = load_directions()
+    fitness_func = create_fitness_function(attribute_to_refine, dico_direction)
+    start_vector = encode(base_image)
+    latent_dim = start_vector.shape[1]
+
+    ga = GeneticAlgorithm(
+        latent_dim=latent_dim,
+        population_size=population_size,
+        fitness_func=fitness_func,
+        mutation_rate=mutation_rate,
+        crossover_rate=crossover_rate
+    )
+    
+    for i in range(population_size // 2):
+        noise = np.random.randn(latent_dim) * 0.1
+        ga.population[i] = start_vector.flatten() + noise
+
+    for gen in range(generations):
+        best_vector, best_score = ga.evolve()
+        print(f"  Gen {gen+1}/{generations}, Best Score: {best_score:.4f}")
+
+    final_vector = ga.population[np.argmax([fitness_func(ind) for ind in ga.population])]
+    refined_image = decode(final_vector.reshape(1, -1))
+
+    message = f"Successfully refined image for attribute: **{attribute_to_refine}**."
+    print("Refinement finished.")
+    
+    return refined_image, message
 
 # ---------------------------------------------------------------------------------------
 # Fonction qui permet de retourner au questionnaire si besoin
