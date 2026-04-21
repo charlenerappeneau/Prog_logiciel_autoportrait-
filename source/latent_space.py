@@ -79,6 +79,33 @@ def interpolate_images(img1, img2, t=0.5):
     shape = np.array(img1).shape
     return decode(z_interp, shape)
 
+def fusion_images(img1, img2, img3, w1=1/3, w2=1/3, w3=1/3):
+    """
+    Interpolation dans l'espace latent entre trois images.
+    w1, w2, w3 représentent le poids de chaque image dans la fusion.
+    """
+    if img1 is None or img2 is None or img3 is None:
+        return None
+
+    # S'assurer que les images ont la même taille
+    if img1.size != img2.size:
+        img2 = img2.resize(img1.size)
+    if img1.size != img3.size:
+        img3 = img3.resize(img1.size)
+
+    z1 = encode(img1)
+    z2 = encode(img2)
+    z3 = encode(img3)
+
+    # Normalisation des poids pour assurer une somme de 1
+    total_w = w1 + w2 + w3
+    w1, w2, w3 = w1/total_w, w2/total_w, w3/total_w
+
+    z_fusion = w1 * z1 + w2 * z2 + w3 * z3
+
+    shape = np.array(img1).shape
+    return decode(z_fusion, shape)
+
 def blend_images(img1, img2, alpha=0.5):
     """
     Mélange classique (Pixel blending) d'images
