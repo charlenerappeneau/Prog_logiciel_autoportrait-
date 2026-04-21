@@ -87,7 +87,7 @@ git clone git@github.com:charlenerappeneau/Prog_logiciel_autoportrait-.git
 Puis aller dans le dossier du projet en exécutant : 
 
 ```bash 
-cd Prog_logiciel_autoportrait
+cd Prog_logiciel_autoportrait-
 ```
 
 ## 2.  CRÉER LE DOSSIER DATASET
