@@ -58,11 +58,12 @@ CelebA a été choisi car il permet :
 
 ## 0. PRÉREQUIS
 
-- Python 3.10 ou supérieur recommandé
-- pip installé
+- Docker Desktop installé (Windows / Mac) ou Docker Engine (Linux)
+- Docker lancé et fonctionnel
 - Prévoir plusieurs Go d’espace libre pour le dataset CelebA
 
-Le projet fonctionne sur CPU. Un GPU accélère les calculs mais n’est pas obligatoire.
+Le projet s’exécute dans un conteneur Docker.
+Il n’est pas nécessaire d’installer Python, pip ou de créer un environnement virtuel.
 
 Suivre les étapes ci-dessous dans l’ordre.
 
@@ -87,35 +88,10 @@ Puis aller dans le dossier du projet en exécutant :
 
 ```bash 
 cd Prog_logiciel_autoportrait-
+cd Prog_logiciel_autoportrait-
 ```
 
-
-## 2. CRÉER UN ENVIRONNEMENT VIRTUEL PYTHON
-Windows :
-
-```bash 
-python -m venv .venv
-.venv\Scripts\activate
-```
-Linux / macOS :
-
-```bash 
-python3 -m venv .venv
-source .venv/bin/activate
-```
-
-Une fois activé, le terminal affiche généralement : (.venv)
-
-
-## 3.  INSTALLER LES DÉPENDANCES
-
-```bash 
-pip install -r requirements.txt
-```
-
-
-## 4.  CRÉER LE DOSSIER DATASET
-
+## 2.  CRÉER LE DOSSIER DATASET
 
 À la racine du projet, exécuter : 
 
@@ -123,7 +99,7 @@ pip install -r requirements.txt
 mkdir dataset
 ```
 
-## 5. TÉLÉCHARGER LE DATASET CELEBA
+## 3. TÉLÉCHARGER LE DATASET CELEBA
 
 Télécharger et placer dans le dossier dataset/ les fichiers suivants : 
 
@@ -147,27 +123,18 @@ dataset/
     └── ...
 ```
 
-## 6. GÉNÉRER LES FICHIERS NÉCESSAIRES AU LANCEMENT DE  L'APPLICATION
+## 4. TÉLÉCHARGER LES FICHIERS PRÉCALCULÉS
 
-Deux scripts doivent être exécutés une première fois avant de lancer l'interface graphique : 
+Télécharger les fichiers suivants depuis ce lien : https://drive.google.com/drive/folders/1wsWlB6VD_bAZ-7T06WZo6hsnNJNX-X9y?usp=sharing
 
-a. Calcul des vecteurs latents. En partant de la racine du projet, exécuter la commande : 
+- df_latents.pkl
+- directions_latentes.npy
 
-```bash
-python -m scripts.compute_latent_vectors
-```
+Puis les placer dans :
 
-Ce script génère : dataset/df_latents.pkl
+dataset/
 
-b. Calcul des directions latentes (pour modification d'attributs). En partant de la racine du projet, exécuter la commande : 
-
-```bash
-python -m scripts.compute_latent_directions
-```
-
-Ce script génère : dataset/directions_latentes.npy
-
-Après exécution des deux scripts, le dossier dataset/ doit contenir :
+Le dossier dataset/ doit alors contenir :
 
 ```text
 dataset/
@@ -178,51 +145,77 @@ dataset/
 └── directions_latentes.npy
 ```
 
-## 7. LANCER L’APPLICATION
+## 5. CONSTRUIRE L’IMAGE DOCKER
 
-En partant de la racine du projet (donc en étant seulement dans le dossier Prog_logiciel_autoportrait/)
-exécuter la commande : 
+Depuis la racine du projet :
 
 ```bash
-python -m scripts.launching_app
+docker build -t portrait-app .
+```
+
+Cette étape installe automatiquement toutes les dépendances dans l’image Docker.
+
+## 6. LANCER L’APPLICATION
+
+Depuis la racine du projet :
+
+Linux / macOS / WSL :
+
+```bash
+docker run --rm -p 7860:7860 -v $(pwd)/dataset:/app/dataset portrait-app
+```
+
+Windows PowerShell :
+
+```bash
+docker run --rm -p 7860:7860 -v ${PWD}/dataset:/app/dataset portrait-app
 ```
 
 Le terminal affichera une adresse locale du type : http://127.0.0.1:7860
-Ouvrir ce lien dans un navigateur (appuyer sur ctrl + lien)
+Ouvrir ce lien dans un navigateur.
 
 
-> **Remarque :**  
-> Une fois les fichiers générés (df_latents.pkl et directions_latentes.npy),
-> il n’est pas nécessaire de relancer les deux scripts.
 
-Il suffit de refaire :
-Windows : 
+>**Remarques**
+>Les fichiers :
+>- df_latents.pkl
+>- directions_latentes.npy
+>sont déjà fournis. Il n’est donc pas nécessaire de lancer :
+>- compute_latent_vectors.py
+>- compute_latent_directions.py
 
-```bash
-.venv\Scripts\activate
-```
 
-Linux / macOS :
 
-```bash
-source .venv/bin/activate
-```
+## UTILISATIONS SUIVANTES
 
-Puis depuis la racine du projet : 
+Il suffit de relancer :
+
+Linux / macOS / WSL :
 
 ```bash
-python -m scripts.launching_app
+docker run --rm -p 7860:7860 -v $(pwd)/dataset:/app/dataset portrait-app
 ```
 
-En cas d'erreur pendant le lancement, vérifier que :
-- dataset/ existe
+Windows PowerShell :
+
+```bash
+docker run --rm -p 7860:7860 -v ${PWD}/dataset:/app/dataset portrait-app
+```
+
+
+## EN CAS D’ERREUR
+
+Vérifier que :
+
+- Docker est lancé
+- le dossier dataset/ existe
 - identity_CelebA.txt est présent
 - list_attr_celeba.txt est présent
 - img_align_celeba/ contient les images
-- df_latents.pkl a bien été généré
-- directions_latentes.npy a bien été généré
-Si une bibliothèque manque : pip install -r requirements.txt
+- df_latents.pkl est présent
+- directions_latentes.npy est présent
 
+Vérifier également que la commande est lancée depuis la racine du projet.
 
 # B. LANCEMENT DE L'INTERFACE : GENERATION DE PORTRAITS
 
