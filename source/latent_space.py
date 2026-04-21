@@ -407,12 +407,13 @@ def modif_attribut(latent_original, dico_direction, attribut, modification, alph
 
 def modify_image_attributes(image, dico_direction, modifications):
     """
-    Encodes an image, applies a set of attribute modifications in the latent space, and decodes the result.
+    Encode une image, applique un ensemble de modifications d'attributs dans l'espace latent, 
+    et décode le résultat.
     
     Paramètres :
         image (PIL.Image) : L'image de base à modifier.
         dico_direction (dict) : Dictionnaire des vecteurs de direction précalculés pour chaque attribut.
-        modifications (list) : Liste de tuples contenant les modifications souhaiées
+        modifications (list) : Liste de tuples contenant les modifications souhaitées
                                (attribut, action, intensité/alpha).
                                Exemple: [('Smiling', 'ajout', 1.5), ('Eyeglasses', 'suppression', 1.0)]
     Retour :
@@ -446,9 +447,15 @@ def modify_image_attributes(image, dico_direction, modifications):
 
 
 def load_directions(file_path="dataset/directions_latentes.npy"):
-    '''
-    Charge le dictionnaire des directions latentes sauvegardé.
-    '''
+    """
+    Charge le dictionnaire des directions latentes depuis un fichier de sauvegarde NumPy.
+    
+    Paramètres :
+        file_path (str) : Chemin vers le fichier contenant les directions (par défaut "dataset/directions_latentes.npy").
+        
+    Retour :
+        dico_direction (dict) : Dictionnaire contenant le nom des attributs comme clés et les vecteurs de direction comme valeurs.
+    """
     dico_direction = np.load(file_path, allow_pickle=True).item()
     return dico_direction
 

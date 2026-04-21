@@ -187,7 +187,18 @@ def appliquer_modifications(image_base, couleur_chev_q2, type_chev_q2, pilosite_
 
 def create_fitness_function(attribute_name, dico_direction):
     """
-    Factory to create a fitness function for the selected attribute.
+    Crée une fonction de fitness pour l'attribut sélectionné.
+    
+    Cette fonction mesure à quel point un vecteur latent est aligné avec 
+    la direction latente correspondant à un attribut donné, en calculant 
+    un produit scalaire normalisé.
+    
+    Paramètres:
+        attribute_name (str): Le nom de l'attribut pour lequel on veut créer la fonction.
+        dico_direction (dict): Dictionnaire contenant les vecteurs de direction pour chaque attribut.
+        
+    Retour:
+        fitness_function (callable): La fonction de fitness qui évalue un vecteur latent.
     """
     if attribute_name not in dico_direction:
         raise ValueError(f"Attribute '{attribute_name}' not found.")
@@ -203,7 +214,20 @@ def create_fitness_function(attribute_name, dico_direction):
 
 def refine_with_genetic_algorithm(base_image, attribute_to_refine, generations, population_size, mutation_rate, crossover_rate):
     """
-    Takes a base image, and uses a GA to refine it towards a specific attribute.
+    Prend une image de base et utilise un algorithme génétique pour l'affiner 
+    et l'optimiser pour un attribut spécifique.
+    
+    Paramètres:
+        base_image (PIL.Image): L'image d'origine depuis laquelle commencer l'optimisation.
+        attribute_to_refine (str): Le nom de l'attribut à optimiser.
+        generations (int): Le nombre de générations pour lesquelles faire évoluer l'algorithme.
+        population_size (int): La taille de la population pour chaque génération.
+        mutation_rate (float): La probabilité de mutation.
+        crossover_rate (float): La probabilité de croisement.
+        
+    Retour:
+        refined_image (PIL.Image): L'image finale reconstruite à partir de l'algorithme génétique.
+        message (str): Un message donnant le résultat de l'optimisation.
     """
     if base_image is None:
         return None, "Error: No base image to refine."
@@ -248,13 +272,21 @@ def refine_with_genetic_algorithm(base_image, attribute_to_refine, generations, 
 def retour_selection():
     """
     Revient à la zone de sélection des images sans toucher
-    aux cases cochées ni aux images déjà affichées
+    aux cases cochées ni aux images déjà affichées.
+
+    Retourne:
+        mises à jour de l'interface (gr.update): rend visible la section de 
+        sélection d'images et cache la section des résultats.
     """
     return gr.update(visible=True), gr.update(visible=False)
 
 def retour_questionnaire():
     """
-    Permet de revenir au questionnaire si besoin.
+    Permet de revenir au questionnaire initial si besoin.
+
+    Retourne:
+        mises à jour de l'interface (gr.update): rend visible le 
+        questionnaire et cache la sélection d'images.
     """
     return gr.update(visible=True), gr.update(visible=False)
 

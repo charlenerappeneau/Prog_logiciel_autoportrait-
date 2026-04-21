@@ -86,7 +86,7 @@ git clone git@github.com:charlenerappeneau/Prog_logiciel_autoportrait-.git
 Puis aller dans le dossier du projet en exécutant : 
 
 ```bash 
-cd Prog_logiciel_autoportrait
+cd Prog_logiciel_autoportrait-
 ```
 
 
@@ -151,7 +151,7 @@ dataset/
 
 Deux scripts doivent être exécutés une première fois avant de lancer l'interface graphique : 
 
-a. Calcul des vecteurs latents. En partant de la racine du projet (donc en étant seulement dans le dossier Prog_logiciel_autoportrait/), exécuter la commande : 
+a. Calcul des vecteurs latents. En partant de la racine du projet, exécuter la commande : 
 
 ```bash
 python -m scripts.compute_latent_vectors
@@ -159,7 +159,7 @@ python -m scripts.compute_latent_vectors
 
 Ce script génère : dataset/df_latents.pkl
 
-b. Calcul des directions latentes (pour modification d'attributs). En partant de la racine du projet (donc en étant seulement dans le Prog_logiciel_autoportrait/), exécuter la commande : 
+b. Calcul des directions latentes (pour modification d'attributs). En partant de la racine du projet, exécuter la commande : 
 
 ```bash
 python -m scripts.compute_latent_directions
@@ -243,7 +243,7 @@ L’application fonctionne en 4 grandes étapes :
 1. Décrire un visage avec un premier questionnaire
 2. Sélectionner une ou plusieurs images proposées
 3. Générer un portrait robot (reconstruction / interpolation / fusion)
-4. Modifier le résultat avec un second questionnaire
+4. Modifier et affiner le résultat avec un second questionnaire
 
 
 ## ÉTAPE 1 : QUESTIONNAIRE INITIAL
@@ -293,9 +293,7 @@ Observer ce que le modèle a appris et générer une version reconstruite du vis
 
 `Reconstruction`
 
-Si plusieurs images ou aucune image sont sélectionnées, un message d’erreur apparaît.
-
-## 2. Interpolation
+## 2. Fusion2
 
 ### Principe
 
@@ -309,11 +307,11 @@ Obtenir un portrait mélangeant progressivement les deux visages.
 
 ### Bouton
 
-`Interpolation`
+`Fusion 3 images`
 
 Si le nombre d’images sélectionnées n’est pas égal à 2, un message d’erreur apparaît.
 
-## 3. Fusion
+## 3. Fusion3
 
 ### Principe
 
@@ -327,7 +325,7 @@ Générer un portrait synthétique inspiré des trois images choisies.
 
 ### Bouton
 
-`Fusion`
+`Fusion 3 images`
 
 Si le nombre d’images sélectionnées n’est pas égal à 3, un message d’erreur apparaît.
 
@@ -354,121 +352,91 @@ Ce bouton permet de revenir aux images proposées pour refaire un autre test.
 
 ## ÉTAPE 4 : QUESTIONNAIRE D’AJUSTEMENT
 
-Après génération du portrait, un second questionnaire apparaît.
+Après génération du portrait, un second questionnaire apparaît, organisé en deux onglets.
 
 ### Objectif
 
 Modifier le visage obtenu sans recommencer tout le processus.
 
-Les modifications sont appliquées grâce aux directions latentes calculées à partir du dataset.
+### Onglet 1 : Ajustement Standard
 
-## MODIFICATIONS DISPONIBLES
+Cette méthode applique une modification simple et directe. Elle "pousse" le visage dans la direction d'un ou plusieurs attributs.
 
-### 1. Cheveux
+#### MODIFICATIONS DISPONIBLES
+
+##### 1. Cheveux
 
 Changer la couleur :
 
-- Blond
-- Brun
-- Noir
-- Gris
-- Chauve
-- Aucun changement
+- Blond, Brun, Noir, Gris, Chauve
 
 Changer le type :
 
-- Raides
-- Ondulés
-- Aucun changement
+- Raides, Ondulés
 
-### 2. Pilosité
+##### 2. Pilosité
 
-Cases multiples :
+- Barbe, Moustache, Bouc, Frange, Sideburns, etc.
 
-- Barbe
-- Moustache
-- Bouc
-- Frange
-- Sideburns
-- Calvitie frontale
+##### 3. Forme et traits du visage
 
-### 3. Forme et traits du visage
+- Joues rosées, Nez pointu, Peau pâle, etc.
 
-Cases multiples :
+##### 4. Accessoires
 
-- Joues rosées
-- Nez pointu
-- Peau pâle
-- Visage ovale
-- Yeux étroits
-- Pommettes hautes
-- Double menton
-- Sourcils épais
-- Gros nez
-- Lèvres pulpeuses
-- Cernes
+- Lunettes, Maquillage prononcé, Chapeau, etc.
 
-### 4. Accessoires
-
-Cases multiples :
-
-- Lunettes
-- Maquillage prononcé
-- Boucles d’oreilles
-- Chapeau
-- Rouge à lèvres
-- Collier
-- Cravate
-
-
-## VALIDATION
+#### VALIDATION
 
 Cliquer sur :
 
 `Appliquer les modifications`
 
-Le portrait est recalculé automatiquement et remplacé par la nouvelle version.
+Le portrait est recalculé et remplacé par la nouvelle version.
 
+### Onglet 2 : Affinage par Algorithme Génétique (Expérimental)
+
+Cette méthode avancée utilise un algorithme évolutionniste pour rechercher de manière intensive la meilleure version d'un visage selon **un seul attribut** à la fois. C'est une recherche plus fine et plus puissante que l'ajustement standard.
+
+#### PRINCIPE
+
+1.  **Sélectionner un attribut** : Choisir dans la liste l'unique caractéristique à optimiser (par exemple, `Smiling` ou `Big_Lips`).
+2.  **Régler les paramètres** : Ajuster les sliders pour contrôler le processus de recherche (nombre de générations, taille de la population, etc.).
+3.  **Lancer l'affinage** : Cliquer sur le bouton `Affiner avec l'Algorithme Génétique`.
+
+L'algorithme va alors créer une population de "candidats" autour de votre image actuelle et les faire "évoluer" sur plusieurs générations pour trouver le visage qui maximise le score de l'attribut choisi.
+
+#### VALIDATION
+
+Cliquer sur :
+
+`Affiner avec l'Algorithme Génétique`
+
+Le portrait est remplacé par le meilleur résultat trouvé par l'algorithme.
 
 ## EXEMPLES D’UTILISATION
 
 ### Exemple 1
 
-- Femme
-- Blond
-- Ondulés
-
-Puis sélectionner 2 images :
-
-**Interpolation**
-
-Ensuite ajouter :
-
-- Lunettes
-- Rouge à lèvres
+- Femme, Blond, Ondulés
+- Sélectionner 2 images → **Interpolation**
+- Dans l'onglet "Ajustement Standard", ajouter : `Lunettes`, `Rouge à lèvres`
+- Cliquer sur `Appliquer les modifications`.
 
 ### Exemple 2
 
-- Homme
-- Brun
-- Raides
-
-Puis sélectionner 1 image :
-
-**Reconstruction**
-
-Ensuite ajouter :
-
-- Barbe
-- Sourcils épais
+- Homme, Brun, Raides
+- Sélectionner 1 image → **Reconstruction**
+- Dans l'onglet "Affinage par Algorithme Génétique", sélectionner `Smiling`
+- Cliquer sur `Affiner avec l'Algorithme Génétique` pour obtenir une version plus souriante du visage.
 
 
 ## CONSEILS
 
-- Tester plusieurs sélections pour obtenir des visages variés
-- Utiliser **Non précisé** pour avoir davantage de résultats
-- Les modifications peuvent être cumulées
-- Certaines transformations sont plus visibles que d’autres selon l’image de départ
+- Tester plusieurs sélections pour obtenir des visages variés.
+- Utiliser **Non précisé** pour avoir davantage de résultats.
+- Les modifications de l'ajustement standard peuvent être cumulées.
+- L'affinage génétique est plus puissant mais ne traite qu'un attribut à la fois.
 
 
 ## FERMETURE DE L’APPLICATION
@@ -488,4 +456,3 @@ Projet réalisé dans le cadre d’un projet de développement logiciel par :
 - Salomé Sonnallier
 
 **INSA LYON - 4A - GROUPE BIM B**
-

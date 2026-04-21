@@ -1,7 +1,22 @@
 import numpy as np
 
 class GeneticAlgorithm:
+    """
+    Implémentation d'un algorithme génétique pour optimiser des vecteurs latents
+    en fonction d'une fonction de fitness donnée (score).
+    """
+
     def __init__(self, latent_dim, population_size, mutation_rate, crossover_rate, fitness_func):
+        """
+        Initialise l'algorithme génétique avec les paramètres spécifiés.
+
+        Paramètres:
+            latent_dim (int): La dimension du vecteur latent.
+            population_size (int): Le nombre d'individus dans la population.
+            mutation_rate (float): Le taux de mutation (probabilité de mutation).
+            crossover_rate (float): Le taux de croisement (probabilité de croisement).
+            fitness_func (callable): Une fonction qui prend un vecteur latent et renvoie un score (fitness).
+        """
         self.latent_dim = latent_dim
         self.population_size = population_size
         self.mutation_rate = mutation_rate
@@ -12,12 +27,33 @@ class GeneticAlgorithm:
         self.population = [np.random.randn(self.latent_dim) for _ in range(self.population_size)]
 
     def _crossover(self, parent1, parent2):
+        """
+        Effectue un croisement en un point (one-point crossover) entre deux parents
+        pour générer un nouvel enfant (vecteur latent).
+
+        Paramètres:
+            parent1 (numpy.ndarray): Vecteur latent du premier parent.
+            parent2 (numpy.ndarray): Vecteur latent du second parent.
+
+        Retour:
+            child (numpy.ndarray): Nouvel individu issu du croisement.
+        """
         # One-point crossover
         crossover_point = np.random.randint(1, self.latent_dim)
         child = np.concatenate([parent1[:crossover_point], parent2[crossover_point:]])
         return child
 
     def _mutate(self, individual):
+        """
+        Applique une mutation à un individu en ajoutant aléatoirement du bruit 
+        à certaines composantes de son vecteur latent.
+
+        Paramètres:
+            individual (numpy.ndarray): Le vecteur latent de l'individu à muter.
+
+        Retour:
+            individual (numpy.ndarray): L'individu muté.
+        """
         for i in range(self.latent_dim):
             if np.random.rand() < self.mutation_rate:
                 # Add a small amount of noise
@@ -25,6 +61,13 @@ class GeneticAlgorithm:
         return individual
 
     def evolve(self):
+        """
+        Fait évoluer la population sur une génération, en utilisant l'élitisme et
+        la sélection par tournoi pour générer la nouvelle génération d'individus.
+
+        Retour:
+            tuple: Le meilleur individu (numpy.ndarray) et son score de fitness (float).
+        """
         # 1. Calculate fitness for the entire population
         fitness_scores = [self.fitness_func(ind) for ind in self.population]
 

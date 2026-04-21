@@ -238,10 +238,10 @@ with gr.Blocks() as demo:
                 )
                 
                 with gr.Accordion("Paramètres de l'Algorithme Génétique", open=False):
-                    ga_gens = gr.Slider(2, 30, value=10, step=1, label="Générations")
-                    ga_pop_size = gr.Slider(5, 30, value=10, step=2, label="Taille de la Population")
-                    ga_mut_rate = gr.Slider(0.0001, 0., value=0.03, label="Taux de Mutation")
-                    ga_cross_rate = gr.Slider(0.1, 1.0, value=0.8, label="Taux de Crossover")
+                    ga_gens = gr.Slider(2, 30, value=10, step=1, label="Générations", info="Nombre de générations pour l'évolution génétique")
+                    ga_pop_size = gr.Slider(5, 30, value=10, step=2, label="Taille de la Population", info="Nombre d'individus dans chaque génération")
+                    ga_mut_rate = gr.Slider(0.001, 0.5, value=0.03, label="Taux de Mutation", info="Taux de mutation pour les individus")
+                    ga_cross_rate = gr.Slider(0.1, 1.0, value=0.8, label="Taux de Crossover", info="Taux de crossover pour la reproduction. Le crossover combine les caractéristiques de deux parents pour créer un enfant. Un taux plus élevé favorise la diversité génétique, tandis qu'un taux plus bas favorise la préservation des traits existants.")
 
                 refine_button = gr.Button("Affiner avec l'Algorithme Génétique", variant="primary")
     #--------------------------------
