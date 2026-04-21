@@ -6,5 +6,8 @@ scripts/__pycache__/
 *.pyc
 
 
+dataset/*
+!dataset/.gitkeep
+!dataset/README_dataset.txt
 
 
