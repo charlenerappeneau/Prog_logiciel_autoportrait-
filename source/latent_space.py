@@ -371,40 +371,6 @@ def modif_attribut(latent_original, dico_direction, attribut, modification, alph
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-#autre version ? : on propose à l'utilisateur de choisir plusieurs attributs à modifier parmi une liste (voir si on donne les noms tels quels dans la liste features ou alors on donne d'autres noms avec explication et on fait le lien nous même)
-#pour faire plusieurs modifications de plusieurs attributs -> boucles 
-
 def modify_image_attributes(image, dico_direction, modifications):
     """
     Encode une image, applique un ensemble de modifications d'attributs dans l'espace latent, 
