@@ -78,9 +78,9 @@ def reconstruct_image(image):
     return reconstructed
 
 #-----------------------------------------------------------------------------
-# Interpolation d'images
+# Fusion d'images
 #-----------------------------------------------------------------------------
-def interpolate_images(img1, img2, t=0.5):
+def fusion_2_images(img1, img2, t=0.5):
     """
     Cette fonction prend deux images en entrée, les encode dans l'espace latent, puis effectue une interpolation linéaire entre les deux vecteurs latents pour obtenir une image intermédiaire.
 
@@ -106,10 +106,8 @@ def interpolate_images(img1, img2, t=0.5):
     shape = np.array(img1).shape
     return decode(z_interp, shape)
 
-#-----------------------------------------------------------------------------
-# Fusion d'images
-#-----------------------------------------------------------------------------
-def fusion_images(img1, img2, img3, w1=1/3, w2=1/3, w3=1/3):
+
+def fusion_3_images(img1, img2, img3, w1=1/3, w2=1/3, w3=1/3):
     """
     Cette fonction prend trois images en entrée, les encode dans l'espace latent, puis effectue une interpolation pondérée entre les trois vecteurs latents pour obtenir une image fusionnée.
     Paramètres :
@@ -145,23 +143,6 @@ def fusion_images(img1, img2, img3, w1=1/3, w2=1/3, w3=1/3):
     return decode(z_fusion, shape)
 
 
-
-#def blend_images(img1, img2, alpha=0.5):
-    """
-#    Mélange classique (Pixel blending) d'images
-#    """
-#    if img1 is None or img2 is None:
-#        return None
-    
-#    # S'assurer que les deux images ont la même taille
-#    if img1.size != img2.size:
-#        img2 = img2.resize(img1.size)
-        
-#    img1_arr = np.array(img1).astype(float)
- #   img2_arr = np.array(img2).astype(float)
-    
- #   blended = (1 - alpha) * img1_arr + alpha * img2_arr
- #   return Image.fromarray(blended.astype(np.uint8))
 
 
 # -------------------------------------------------------------------------------------------------------

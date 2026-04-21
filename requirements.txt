@@ -1,7 +1,9 @@
-gradio
 torch
 torchvision
-pillow
 numpy
+Pillow
+gradio
+matplotlib
+scikit-learn
 pandas
 

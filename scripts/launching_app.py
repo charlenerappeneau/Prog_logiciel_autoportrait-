@@ -3,6 +3,13 @@
 # notamment la sélection d'images, la reconstruction, l'interpolation, la fusion et l'application de modifications basées sur les directions latentes calculées précédemment
 # L'interface guide l utilisateur à travers un questionnaire initial, la sélection d'images, et un second questionnaire pour affiner les modifications souhaitées sur le portrait généré
 
+import sys
+import os
+
+# Ajoute le dossier parent au chemin de recherche de Python
+# Cela permet de trouver le dossier 'source' depuis le dossier 'scripts'
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
 import gradio as gr
 from PIL import Image
 from torch import le
