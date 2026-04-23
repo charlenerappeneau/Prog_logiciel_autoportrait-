@@ -65,7 +65,8 @@ with gr.Blocks() as demo:
         info = gr.Textbox(label="Informations", interactive=False)
         gr.Markdown(""" ## Que voulez-vous faire ?
                     - **Reconstruction** : sélectionnez exactement **1 image**
-                    - **Interpolation** : sélectionnez exactement **2 images** """)
+                    - **Fusion 2 images ** : sélectionnez exactement **2 images**
+                    - **Fusion 3 images** : sélectionnez exactement **3 images**""")
 
         #--------------------------------------------------------------------------------------------
         # States qui stockent les chemins : 
