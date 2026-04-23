@@ -4,24 +4,24 @@ import sys
 import os
 from PIL import Image
 
-# --- Setup Paths and Imports ---
+
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from source.latent_space import decode, load_directions
 from source.genetic_algorithm import GeneticAlgorithm
 
-# --- 1. Load VAE and Latent Directions ---
+# Charger le VAE et les directions latentes ---
 print("Loading latent directions...")
 dico_direction = load_directions()
-# Get a sorted list of all available attributes for the dropdown
+# Obtenir une liste triée de tous les attributs disponibles pour le menu déroulant
 available_attributes = sorted(list(dico_direction.keys()))
 print("Directions loaded.")
 
-# --- 2. Define the Fitness Function Factory ---
+# Définir la fabrique de fonctions de fitness 
 def create_fitness_function(attribute_name):
     """
-    Returns a fitness function that calculates the dot product
-    between a latent vector and the direction for the given attribute.
+    Retourne une fonction de fitness qui calcule le produit scalaire
+    entre un vecteur latent et la direction pour l'attribut donné.
     """
     if attribute_name not in dico_direction:
         raise ValueError(f"Attribute '{attribute_name}' not found in direction dictionary.")
@@ -31,22 +31,22 @@ def create_fitness_function(attribute_name):
 
     def fitness_function(latent_vector):
         latent_vector_norm = latent_vector / np.linalg.norm(latent_vector)
-        # The dot product measures alignment. Higher is better.
+        # Le produit scalaire mesure l'alignement. Plus il est élevé, mieux c'est.
         return np.dot(latent_vector_norm, direction_norm)
         
     return fitness_function
 
-# --- 3. Gradio Application Logic ---
+# Logique de l'application Gradio 
 ga_instance = None
 
 def run_evolution(attribute_to_optimize, generations, population_size, mutation_rate, crossover_rate):
     global ga_instance
-    latent_dim = 128  # Match the dimension of the pre-calculated direction vectors
+    latent_dim = 128  # Correspond à la dimension des vecteurs de direction pré-calculés
 
-    # Create a specific fitness function for the selected attribute
+    # Créer une fonction de fitness spécifique pour l'attribut sélectionné
     fitness_func = create_fitness_function(attribute_to_optimize)
 
-    # Initialize GA on the first run
+    # Initialiser l'algorithme génétique lors de la première exécution
     ga_instance = GeneticAlgorithm(
         latent_dim=latent_dim,
         population_size=population_size,
@@ -59,7 +59,7 @@ def run_evolution(attribute_to_optimize, generations, population_size, mutation_
     for gen in range(generations):
         best_vector, best_score = ga_instance.evolve()
         
-        # Decode the best vector of the current generation into an image
+        # Décoder le meilleur vecteur de la génération actuelle en une image
         img = decode(best_vector.reshape(1, -1))
         
         status_message = (
@@ -71,8 +71,8 @@ def run_evolution(attribute_to_optimize, generations, population_size, mutation_
     
     print("Evolution finished.")
 
-# --- 4. Build the Gradio Interface ---
-# Removed the theme to restore the default Gradio look
+# Construire l'interface Gradio 
+
 with gr.Blocks() as demo:
     gr.Markdown("# VAE Genetic Algorithm Explorer")
     gr.Markdown(
@@ -107,6 +107,6 @@ with gr.Blocks() as demo:
         outputs=[output_image, output_text]
     )
 
-# --- 5. Launch the App ---
+# Lancer l'application 
 if __name__ == "__main__":
     demo.queue().launch()

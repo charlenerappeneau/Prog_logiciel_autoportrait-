@@ -21,9 +21,9 @@ class GeneticAlgorithm:
         self.population_size = population_size
         self.mutation_rate = mutation_rate
         self.crossover_rate = crossover_rate
-        self.fitness_func = fitness_func  # A function that takes a latent vector and returns a score
+        self.fitness_func = fitness_func  # Une fonction qui prend un vecteur latent et renvoie un score
         
-        # Initialize population with random vectors from a normal distribution
+        # Initialise la population avec des vecteurs aléatoires tirés d'une distribution normale
         self.population = [np.random.randn(self.latent_dim) for _ in range(self.population_size)]
 
     def _crossover(self, parent1, parent2):
@@ -38,7 +38,7 @@ class GeneticAlgorithm:
         Retour:
             child (numpy.ndarray): Nouvel individu issu du croisement.
         """
-        # One-point crossover
+        # Croisement en un point
         crossover_point = np.random.randint(1, self.latent_dim)
         child = np.concatenate([parent1[:crossover_point], parent2[crossover_point:]])
         return child
@@ -56,7 +56,7 @@ class GeneticAlgorithm:
         """
         for i in range(self.latent_dim):
             if np.random.rand() < self.mutation_rate:
-                # Add a small amount of noise
+                # Ajoute une petite quantité de bruit
                 individual[i] += np.random.randn() * 0.01
         return individual
 
@@ -68,18 +68,18 @@ class GeneticAlgorithm:
         Retour:
             tuple: Le meilleur individu (numpy.ndarray) et son score de fitness (float).
         """
-        # 1. Calculate fitness for the entire population
+        # 1. Calcule le score de fitness pour toute la population
         fitness_scores = [self.fitness_func(ind) for ind in self.population]
 
-        # 2. Select the best individuals to be parents (Elitism + Tournament Selection)
+        # 2. Sélectionne les meilleurs individus pour devenir parents (Élitisme + Sélection par tournoi)
         sorted_indices = np.argsort(fitness_scores)[::-1]
         
-        # Keep the top 2 best individuals (elitism)
+        # Conserve les 2 meilleurs individus (élitisme)
         next_population = [self.population[i] for i in sorted_indices[:2]]
 
-        # 3. Create the rest of the new population through crossover and mutation
+        # 3. Crée le reste de la nouvelle population par croisement et mutation
         while len(next_population) < self.population_size:
-            # Tournament selection: pick 4 random individuals and choose the best 2 as parents
+            # Sélection par tournoi : choisit 4 individus au hasard et prend les 2 meilleurs comme parents
             tournament = np.random.choice(self.population_size, 4, replace=False)
             tournament_fitness = [fitness_scores[i] for i in tournament]
             parent_indices = np.argsort(tournament_fitness)[::-1][:2]
@@ -89,13 +89,13 @@ class GeneticAlgorithm:
             if np.random.rand() < self.crossover_rate:
                 child = self._crossover(parent1, parent2)
             else:
-                child = parent1.copy() # Keep one parent if no crossover
+                child = parent1.copy() # Conserve un parent s'il n'y a pas de croisement
 
             mutated_child = self._mutate(child)
             next_population.append(mutated_child)
         
         self.population = next_population
         
-        # Return the best individual and its score from this generation
+        # Retourne le meilleur individu et son score pour cette génération
         best_index = sorted_indices[0]
         return self.population[best_index], fitness_scores[best_index]
