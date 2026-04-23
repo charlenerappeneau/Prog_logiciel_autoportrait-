@@ -264,7 +264,7 @@ with gr.Blocks() as demo:
 
 
 def main(): #sert à lancer l'application Gradio, elle est appelée à la fin du script pour démarrer l'interface et rendre le serveur accessible à l'adresse http://localhost:7860 depuis un autre appareil
-    demo.queue().launch(server_name="127.0.0.1", server_port=7860) # le serveur est accessible à l'adresse http://localhost:7860  depuis un autre appareil
+    demo.queue().launch(server_name="0.0.0.0", server_port=7860) # le serveur est accessible à l'adresse http://localhost:7860  depuis un autre appareil
 
 if __name__ == "__main__": #sert a vérifier que le script est exécuté directement et non importé en tant que module, si c'est le cas, il appelle la fonction main() pour lancer l'application Gradio
     main()
